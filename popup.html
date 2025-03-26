@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tab Age Tracker</title>
+  <link rel="stylesheet" href="popup.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Tab Age Tracker</h1>
+      <div class="tab-count">
+        <span id="tabCount">0</span> tabs open
+      </div>
+    </header>
+
+    <div class="stats-overview">
+      <div class="stat-card">
+        <div class="stat-title">Today</div>
+        <div class="stat-value" id="todayCount">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">This Week</div>
+        <div class="stat-value" id="weekCount">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">This Month</div>
+        <div class="stat-value" id="monthCount">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Older</div>
+        <div class="stat-value" id="olderCount">0</div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="ageDistributionChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="trendChart"></canvas>
+    </div>
+
+    <div class="actions">
+      <button id="viewDetails">View Details</button>
+      <button id="openOptions">Options</button>
+      <button id="checkOldTabs">Check Old Tabs</button>
+    </div>
+
+    <div class="progress-container">
+      <h3>Progress to Tab Zero</h3>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-text">
+        <span id="progressPercent">0%</span> complete
+      </div>
+      <div class="progress-info">
+        Peak: <span id="peakTabs">0</span> tabs
+      </div>
+    </div>
+    
+    <div class="info-container">
+      <h3>About Tab Age</h3>
+      <p>Tabs are categorized by age to help you identify which ones you've been keeping open for too long.</p>
+      <ul>
+        <li><span class="tag today">Today</span> - Opened in the last 24 hours</li>
+        <li><span class="tag week">This Week</span> - Opened in the last 7 days</li>
+        <li><span class="tag month">This Month</span> - Opened in the last 30 days</li>
+        <li><span class="tag older">Older</span> - Opened more than 30 days ago</li>
+      </ul>
+    </div>
+  </div>
+
+  <script src="utils.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

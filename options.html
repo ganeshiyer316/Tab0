@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tab Age Tracker - Options</title>
+  <link rel="stylesheet" href="options.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Tab Age Tracker</h1>
+      <div class="subtitle">Options & Detailed Analytics</div>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab-button active" data-tab="dashboard">Dashboard</button>
+      <button class="tab-button" data-tab="details">Details</button>
+      <button class="tab-button" data-tab="settings">Settings</button>
+      <button class="tab-button" data-tab="export">Export</button>
+    </nav>
+
+    <div class="tab-content" id="dashboard">
+      <div class="summary-cards">
+        <div class="summary-card">
+          <div class="card-title">Total Tabs</div>
+          <div class="card-value" id="totalTabs">0</div>
+        </div>
+        <div class="summary-card">
+          <div class="card-title">Oldest Tab</div>
+          <div class="card-value" id="oldestTab">N/A</div>
+        </div>
+        <div class="summary-card">
+          <div class="card-title">Peak Tab Count</div>
+          <div class="card-value" id="peakCount">0</div>
+        </div>
+        <div class="summary-card">
+          <div class="card-title">Progress</div>
+          <div class="card-value" id="progressPercent">0%</div>
+        </div>
+      </div>
+
+      <div class="chart-row">
+        <div class="chart-container">
+          <h2>Tab Age Distribution</h2>
+          <canvas id="tabAgeChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <h2>Tab Count History</h2>
+          <canvas id="historyChart"></canvas>
+        </div>
+      </div>
+
+      <div class="chart-row">
+        <div class="chart-container full-width">
+          <h2>Monthly Progress</h2>
+          <canvas id="monthlyProgressChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="details" style="display:none;">
+      <div class="filter-controls">
+        <div class="search-box">
+          <input type="text" id="searchInput" placeholder="Search tabs...">
+        </div>
+        <div class="filter-box">
+          <select id="ageFilter">
+            <option value="all">All Ages</option>
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="older">Older</option>
+          </select>
+        </div>
+        <div class="sort-box">
+          <select id="sortOption">
+            <option value="age-desc">Oldest First</option>
+            <option value="age-asc">Newest First</option>
+            <option value="title">By Title</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="tabs-detail">
+        <table class="tabs-table">
+          <thead>
+            <tr>
+              <th>Tab</th>
+              <th>Age</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="tabsTableBody">
+            <!-- Tab rows will be inserted here -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="tab-content" id="settings" style="display:none;">
+      <h2>Display Settings</h2>
+      <div class="settings-group">
+        <div class="setting-item">
+          <label for="badgeDisplay">Badge Display</label>
+          <select id="badgeDisplay">
+            <option value="count">Tab Count</option>
+            <option value="age">Oldest Tab Age (days)</option>
+            <option value="none">No Badge</option>
+          </select>
+        </div>
+
+        <div class="setting-item">
+          <label for="colorScheme">Color Scheme</label>
+          <select id="colorScheme">
+            <option value="default">Default</option>
+            <option value="monochrome">Monochrome</option>
+            <option value="pastel">Pastel</option>
+          </select>
+        </div>
+      </div>
+
+      <h2>Data Management</h2>
+      <div class="settings-group">
+        <div class="setting-item">
+          <label for="dataPeriod">Data Retention Period</label>
+          <select id="dataPeriod">
+            <option value="30">30 days</option>
+            <option value="60">60 days</option>
+            <option value="90">90 days</option>
+            <option value="unlimited">Unlimited</option>
+          </select>
+        </div>
+
+        <div class="setting-actions">
+          <button id="resetPeakBtn" class="secondary-button">Reset Peak Tab Count</button>
+          <button id="clearDataBtn" class="danger-button">Clear All Data</button>
+        </div>
+      </div>
+
+      <h2>Goals</h2>
+      <div class="settings-group">
+        <div class="setting-item">
+          <label for="tabGoal">Tab Reduction Goal</label>
+          <input type="number" id="tabGoal" min="0" placeholder="Target number of tabs">
+        </div>
+
+        <div class="setting-item checkbox">
+          <input type="checkbox" id="enableReminders">
+          <label for="enableReminders">Enable reminders when tab count exceeds goal</label>
+        </div>
+        
+        <div class="setting-item checkbox">
+          <input type="checkbox" id="notifyOldTabs">
+          <label for="notifyOldTabs">Notify me about old tabs</label>
+        </div>
+        
+        <div class="setting-item">
+          <label for="oldTabThreshold">Consider tabs old after (days)</label>
+          <input type="number" id="oldTabThreshold" min="1" max="365" value="30">
+        </div>
+        
+        <div class="setting-actions">
+          <button id="checkOldTabsBtn" class="secondary-button">Check for old tabs now</button>
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <button id="saveSettingsBtn" class="primary-button">Save Settings</button>
+      </div>
+    </div>
+
+    <div class="tab-content" id="export" style="display:none;">
+      <h2>Export Tab Data</h2>
+      <p>Export your tab data for backup or analysis. The export will include tab URLs, titles, and age information.</p>
+
+      <div class="export-options">
+        <div class="export-option">
+          <h3>CSV Export</h3>
+          <p>Export as a CSV file that you can open in Excel or Google Sheets.</p>
+          <button id="exportCsvBtn" class="primary-button">Export to CSV</button>
+        </div>
+
+        <div class="export-option">
+          <h3>JSON Export</h3>
+          <p>Export as a JSON file for programmatic use or advanced analysis.</p>
+          <button id="exportJsonBtn" class="primary-button">Export to JSON</button>
+        </div>
+      </div>
+
+      <h2>Import Tab Data</h2>
+      <p>Import previously exported tab data. This will replace your current data.</p>
+      <div class="import-section">
+        <input type="file" id="importFileInput" accept=".json">
+        <button id="importJsonBtn" class="secondary-button">Import from JSON</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="utils.js"></script>
+  <script src="options.js"></script>
+</body>
+</html>
