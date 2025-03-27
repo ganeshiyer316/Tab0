@@ -198,6 +198,24 @@
         <button id="openWebDashboardBtn" class="highlight-button">Open Web Dashboard</button>
         <button id="exportToWebDashboardBtn" class="primary-button">Export to Web Dashboard</button>
       </div>
+      
+      <h2>Web Dashboard Server</h2>
+      <p>Configure web dashboard server settings for long-term trend analysis and tab grouping suggestions.</p>
+      <div class="settings-group">
+        <div class="setting-item checkbox">
+          <input type="checkbox" id="useServerDashboard">
+          <label for="useServerDashboard">Use server dashboard for trends and tab grouping suggestions</label>
+        </div>
+        
+        <div class="setting-item">
+          <label for="serverUrl">Dashboard Server URL</label>
+          <input type="text" id="serverUrl" placeholder="https://tab-age-tracker.replit.app">
+        </div>
+        
+        <div class="setting-actions">
+          <button id="syncWithServerBtn" class="secondary-button">Sync Data with Server Now</button>
+        </div>
+      </div>
 
       <h2>Import Tab Data</h2>
       <p>Import previously exported tab data. This will replace your current data.</p>

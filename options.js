@@ -390,6 +390,10 @@ function initializeSettingsForm(settings) {
   // Set values for the new notification settings
   document.getElementById('notifyOldTabs').checked = settings.notifyOldTabs !== undefined ? settings.notifyOldTabs : true;
   document.getElementById('oldTabThreshold').value = settings.oldTabThreshold || 30;
+  
+  // Set values for server dashboard settings
+  document.getElementById('useServerDashboard').checked = settings.useServerDashboard || false;
+  document.getElementById('serverUrl').value = settings.serverUrl || 'https://tab-age-tracker.replit.app';
 }
 
 function setupEventListeners() {
@@ -429,6 +433,10 @@ function setupEventListeners() {
   
   const exportToWebDashboardBtn = document.getElementById('exportToWebDashboardBtn');
   exportToWebDashboardBtn.addEventListener('click', exportToWebDashboard);
+  
+  // Server dashboard buttons
+  const syncWithServerBtn = document.getElementById('syncWithServerBtn');
+  syncWithServerBtn.addEventListener('click', syncWithServer);
   
   // Import button
   const importJsonBtn = document.getElementById('importJsonBtn');
@@ -531,7 +539,10 @@ async function saveSettings() {
     tabGoal: parseInt(document.getElementById('tabGoal').value) || 0,
     enableReminders: document.getElementById('enableReminders').checked,
     notifyOldTabs: document.getElementById('notifyOldTabs').checked,
-    oldTabThreshold: parseInt(document.getElementById('oldTabThreshold').value) || 30
+    oldTabThreshold: parseInt(document.getElementById('oldTabThreshold').value) || 30,
+    // Server dashboard settings
+    useServerDashboard: document.getElementById('useServerDashboard').checked,
+    serverUrl: document.getElementById('serverUrl').value || 'https://tab-age-tracker.replit.app'
   };
   
   try {
@@ -547,9 +558,43 @@ async function saveSettings() {
       chrome.runtime.sendMessage({ action: 'checkOldTabs' });
     }
     
+    // If server dashboard is enabled, sync data with the server
+    if (settings.useServerDashboard) {
+      chrome.runtime.sendMessage({ action: 'syncData' });
+    }
+    
     showMessage('Settings saved successfully!');
   } catch (error) {
     showError('Failed to save settings. Please try again.');
+  }
+}
+
+// Function to manually sync data with the server
+async function syncWithServer() {
+  try {
+    // Show sync in progress
+    const button = document.getElementById('syncWithServerBtn');
+    const originalText = button.textContent;
+    button.textContent = 'Syncing...';
+    button.disabled = true;
+    
+    // Send sync message to background script
+    await new Promise((resolve) => {
+      chrome.runtime.sendMessage({ action: 'syncData' }, resolve);
+    });
+    
+    // Reset button and show success message
+    setTimeout(() => {
+      button.textContent = originalText;
+      button.disabled = false;
+      showMessage('Data successfully synced with server.');
+    }, 1000);
+  } catch (error) {
+    showError('Failed to sync data with server. Please try again.');
+    // Reset button state
+    const button = document.getElementById('syncWithServerBtn');
+    button.textContent = 'Sync Data with Server Now';
+    button.disabled = false;
   }
 }
 
@@ -723,7 +768,10 @@ function getDefaultSettings() {
     tabGoal: 0,
     enableReminders: false,
     notifyOldTabs: true,
-    oldTabThreshold: 30
+    oldTabThreshold: 30,
+    // Server dashboard settings
+    useServerDashboard: false,
+    serverUrl: 'https://tab-age-tracker.replit.app'
   };
 }
 
@@ -765,9 +813,19 @@ function showError(message) {
 
 // Function to open the web dashboard (empty for now)
 function openWebDashboard() {
-  // Open the web dashboard in a new tab
-  const dashboardUrl = chrome.runtime.getURL('/website/index.html');
-  chrome.tabs.create({ url: dashboardUrl });
+  // Get the server URL from settings if available
+  chrome.storage.local.get(['settings'], (data) => {
+    const settings = data.settings || {};
+    let dashboardUrl = chrome.runtime.getURL('/website/index.html');
+    
+    // Add server URL to parameters if available
+    if (settings.serverUrl) {
+      dashboardUrl += `?serverUrl=${encodeURIComponent(settings.serverUrl)}`;
+    }
+    
+    // Open the web dashboard in a new tab
+    chrome.tabs.create({ url: dashboardUrl });
+  });
 }
 
 // Function to export data directly to the web dashboard
@@ -786,8 +844,16 @@ async function exportToWebDashboard() {
     const jsonString = JSON.stringify(data);
     const base64Data = btoa(jsonString);
     
+    // Get server URL from settings if available
+    const settings = data.settings || {};
+    
     // Create dashboard URL with data parameter
-    const dashboardUrl = chrome.runtime.getURL(`/website/index.html?data=${encodeURIComponent(base64Data)}`);
+    let dashboardUrl = chrome.runtime.getURL(`/website/index.html?data=${encodeURIComponent(base64Data)}`);
+    
+    // Add server URL parameter if available
+    if (settings.serverUrl) {
+      dashboardUrl += `&serverUrl=${encodeURIComponent(settings.serverUrl)}`;
+    }
     
     // Open in a new tab
     chrome.tabs.create({ url: dashboardUrl });

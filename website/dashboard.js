@@ -13,6 +13,7 @@ const importStatus = document.getElementById('import-status');
 const dashboardContent = document.getElementById('dashboard-content');
 const tabSearchInput = document.getElementById('tab-search');
 const ageFilterSelect = document.getElementById('age-filter');
+const tabGroupsContainer = document.getElementById('tab-groups-container');
 
 // Color configuration
 const COLORS = {
@@ -32,6 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Check if we have data in URL parameters (shared from extension)
   const urlParams = new URLSearchParams(window.location.search);
   const dataParam = urlParams.get('data');
+  const serverUrlParam = urlParams.get('serverUrl');
   
   if (dataParam) {
     try {
@@ -40,13 +42,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const tabData = JSON.parse(decodedData);
       processImportedData(tabData);
       
-      // Clear the URL parameter after processing
-      window.history.replaceState({}, document.title, window.location.pathname);
+      // Don't clear URL entirely in case we have a serverUrl parameter
+      if (serverUrlParam) {
+        window.history.replaceState({}, document.title, window.location.pathname + '?serverUrl=' + encodeURIComponent(serverUrlParam));
+      } else {
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
     } catch (error) {
       console.error('Error processing URL data:', error);
       showImportError('Invalid data in URL. Please try importing directly.');
     }
   }
+  
+  // Load data from server if available
+  loadServerData(serverUrlParam);
 });
 
 /**
@@ -64,6 +73,12 @@ function handleImport() {
   reader.onload = (event) => {
     try {
       const data = JSON.parse(event.target.result);
+      
+      // Get server URL parameter if available
+      const urlParams = new URLSearchParams(window.location.search);
+      const serverUrl = urlParams.get('serverUrl');
+      
+      // Process data with server URL awareness
       processImportedData(data);
     } catch (error) {
       showImportError('Invalid JSON file. Please export a valid file from the extension.');
@@ -121,6 +136,13 @@ function processImportedData(data) {
   
   // Update UI with the processed data
   updateDashboard(processedData);
+  
+  // Get server URL from URL parameters if available
+  const urlParams = new URLSearchParams(window.location.search);
+  const serverUrl = urlParams.get('serverUrl');
+  
+  // Save data to server for trend analysis and recommendations
+  saveToServer(processedData, serverUrl);
 }
 
 /**
@@ -527,4 +549,200 @@ function formatDate(date) {
   const year = d.getFullYear();
   
   return `${month}/${day}/${year}`;
+}
+
+/**
+ * Load data from the server
+ * @param {string} serverUrl - Optional server URL (defaults to current host)
+ */
+async function loadServerData(serverUrl) {
+  try {
+    // Prepare base URL for API requests
+    const baseUrl = serverUrl || '';
+    
+    // Get distribution data
+    const distributionUrl = baseUrl ? `${baseUrl}/api/stats/distribution` : '/api/stats/distribution';
+    const distributionResponse = await fetch(distributionUrl);
+    
+    if (distributionResponse.ok) {
+      const distributionData = await distributionResponse.json();
+      
+      if (distributionData && distributionData.distribution) {
+        // Update the dashboard with distribution data
+        const tabCounts = distributionData.distribution;
+        const totalTabs = distributionData.count;
+        const peakCount = distributionData.peak_count;
+        
+        // Update counts
+        document.getElementById('current-tab-count').textContent = totalTabs;
+        document.getElementById('peak-tab-count').textContent = peakCount;
+        document.getElementById('today-count').textContent = tabCounts.today;
+        document.getElementById('week-count').textContent = tabCounts.week;
+        document.getElementById('month-count').textContent = tabCounts.month;
+        document.getElementById('older-count').textContent = tabCounts.older;
+        
+        // Update progress to tab zero
+        const progressPercentage = peakCount ? 
+          Math.max(0, Math.min(100, Math.round(100 * (1 - totalTabs / peakCount)))) : 0;
+        document.getElementById('tab-zero-progress').style.width = `${progressPercentage}%`;
+        document.getElementById('progress-percentage').textContent = `${progressPercentage}% complete`;
+        
+        // Update distribution chart
+        initDistributionChart(tabCounts);
+        
+        // Show dashboard content
+        dashboardContent.classList.remove('hidden');
+      }
+    }
+    
+    // Get trend data
+    const trendUrl = baseUrl ? `${baseUrl}/api/stats/trend` : '/api/stats/trend';
+    const trendResponse = await fetch(trendUrl);
+    
+    if (trendResponse.ok) {
+      const trendData = await trendResponse.json();
+      
+      if (trendData && trendData.length > 0) {
+        // Format for chart
+        const formattedTrendData = trendData.map(entry => ({
+          date: entry.date,
+          count: Math.round(entry.avg_count)
+        }));
+        
+        // Update trend chart
+        initTrendChart(formattedTrendData);
+      }
+    }
+    
+    // Get tab group suggestions
+    loadTabGroupSuggestions(serverUrl);
+    
+  } catch (error) {
+    console.error('Error loading server data:', error);
+    console.log('Server URL used:', serverUrl || 'current host');
+  }
+}
+
+/**
+ * Load tab group suggestions from the server
+ * @param {string} serverUrl - Optional server URL (defaults to current host)
+ */
+async function loadTabGroupSuggestions(serverUrl) {
+  try {
+    // Use either provided server URL or the current hostname
+    const url = serverUrl || '/api/suggest/groups';
+    
+    // For absolute URLs, use the full URL, for relative ones, use fetch as is
+    const apiUrl = url.startsWith('http') ? `${url}/api/suggest/groups` : url;
+    
+    const response = await fetch(apiUrl);
+    if (response.ok) {
+      const groups = await response.json();
+      displayTabGroupSuggestions(groups);
+    }
+  } catch (error) {
+    console.error('Error loading tab group suggestions:', error);
+    tabGroupsContainer.innerHTML = '<div class="no-groups-message">Unable to load tab group suggestions.</div>';
+  }
+}
+
+/**
+ * Display tab group suggestions
+ * @param {Array} groups - Tab group suggestions
+ */
+function displayTabGroupSuggestions(groups) {
+  // Clear container
+  tabGroupsContainer.innerHTML = '';
+  
+  if (!groups || groups.length === 0) {
+    tabGroupsContainer.innerHTML = '<div class="no-groups-message">No tab group suggestions available. Import or add more tabs.</div>';
+    return;
+  }
+  
+  // Add each group card
+  groups.forEach(group => {
+    const card = document.createElement('div');
+    card.className = 'group-card';
+    
+    // Card header
+    const header = document.createElement('div');
+    header.className = 'group-header';
+    
+    const name = document.createElement('div');
+    name.className = 'group-name';
+    name.textContent = group.name;
+    
+    const count = document.createElement('div');
+    count.className = 'group-count';
+    count.textContent = `${group.count} tabs`;
+    
+    header.appendChild(name);
+    header.appendChild(count);
+    card.appendChild(header);
+    
+    // Group reason
+    const reason = document.createElement('div');
+    reason.className = 'group-reason';
+    reason.textContent = group.reason;
+    card.appendChild(reason);
+    
+    // Tab list
+    const tabsList = document.createElement('div');
+    tabsList.className = 'group-tabs';
+    
+    group.tabs.forEach(tab => {
+      const tabItem = document.createElement('div');
+      tabItem.className = 'group-tab';
+      
+      const title = document.createElement('div');
+      title.className = 'group-tab-title';
+      title.textContent = truncateString(tab.title || 'Untitled', 40);
+      title.title = tab.title || 'Untitled';
+      
+      const url = document.createElement('div');
+      url.className = 'group-tab-url';
+      url.textContent = truncateString(tab.url || '', 50);
+      url.title = tab.url || '';
+      
+      tabItem.appendChild(title);
+      tabItem.appendChild(url);
+      tabsList.appendChild(tabItem);
+    });
+    
+    card.appendChild(tabsList);
+    tabGroupsContainer.appendChild(card);
+  });
+}
+
+/**
+ * Save imported data to the server
+ * @param {Object} data - The data to save
+ * @param {string} serverUrl - Optional server URL (defaults to current host)
+ */
+async function saveToServer(data, serverUrl) {
+  try {
+    // Use either provided server URL or the current hostname
+    const url = serverUrl || '/api/import-data';
+    
+    // For absolute URLs, use the full URL, for relative ones, use fetch as is
+    const apiUrl = url.startsWith('http') ? `${url}/api/import-data` : url;
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    
+    if (response.ok) {
+      console.log('Data saved to server successfully');
+      // After successful save, load tab group suggestions
+      loadTabGroupSuggestions(serverUrl);
+    } else {
+      console.error('Error saving to server:', await response.text());
+    }
+  } catch (error) {
+    console.error('Error saving data to server:', error);
+  }
 }

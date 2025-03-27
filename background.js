@@ -18,7 +18,9 @@ chrome.runtime.onInstalled.addListener(async () => {
       tabGoal: 20,
       enableReminders: true,
       notifyOldTabs: true,
-      oldTabThreshold: 30 // days
+      oldTabThreshold: 30, // days
+      useServerDashboard: false,
+      serverUrl: 'https://tab-age-tracker.replit.app'
     }
   };
   
@@ -209,6 +211,8 @@ chrome.alarms.create('dailyCapture', {
 chrome.alarms.onAlarm.addListener((alarm) => {
   if (alarm.name === 'dailyCapture') {
     captureCurrentTabs();
+    // Send data to the server for analytics and trend tracking
+    syncDataWithServer();
   }
 });
 
@@ -424,12 +428,59 @@ async function captureCurrentTabsWithDistribution() {
   }
 }
 
+// Sync data with the server for long-term analysis
+async function syncDataWithServer() {
+  try {
+    // Get current data
+    const data = await chrome.storage.local.get(['tabData', 'tabHistory', 'peakTabCount', 'settings']);
+    
+    // Get settings
+    const settings = data.settings || {};
+    
+    // Only sync if the server dashboard is enabled
+    if (!settings.useServerDashboard) {
+      console.log('Server dashboard sync is disabled in settings');
+      return;
+    }
+    
+    // Create the request data
+    const requestData = {
+      tabData: data.tabData,
+      tabHistory: data.tabHistory,
+      peakTabCount: data.peakTabCount
+    };
+    
+    // Get the web dashboard URL from settings or use a default
+    const serverUrl = settings.serverUrl || 'https://tab-age-tracker.replit.app';
+    
+    // Send the data to the server
+    const response = await fetch(`${serverUrl}/api/import-data`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestData)
+    });
+    
+    if (response.ok) {
+      console.log('Data successfully synced with server');
+    } else {
+      console.error('Failed to sync data with server:', await response.text());
+    }
+  } catch (error) {
+    console.error('Error syncing data with server:', error);
+  }
+}
+
 // Listen for messages from other parts of the extension
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === 'updateBadge') {
     updateExtensionBadge();
   } else if (message.action === 'checkOldTabs') {
     checkAndNotifyOldTabs();
+    sendResponse({ success: true });
+  } else if (message.action === 'syncData') {
+    syncDataWithServer();
     sendResponse({ success: true });
   }
 });

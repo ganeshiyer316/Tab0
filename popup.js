@@ -453,12 +453,41 @@ function openOptionsPage() {
 
 /**
  * Open the Web Dashboard in a new tab
- * This function opens the web dashboard URL
+ * This function opens the web dashboard URL and exports the current tab data
  */
 function openWebDashboard() {
-  // Open the web dashboard in a new tab
-  const dashboardUrl = chrome.runtime.getURL('/website/index.html');
-  chrome.tabs.create({ url: dashboardUrl });
+  // Get current data
+  chrome.storage.local.get(['tabData', 'tabHistory', 'peakTabCount'], (data) => {
+    // Check if we should use the server dashboard
+    chrome.storage.local.get(['settings'], (settingsData) => {
+      const settings = settingsData.settings || {};
+      const useServerDashboard = settings.useServerDashboard || false;
+      const serverUrl = settings.serverUrl || 'https://tab-age-tracker.replit.app';
+      
+      if (useServerDashboard) {
+        // Use the server dashboard
+        chrome.tabs.create({ url: serverUrl });
+        
+        // Sync data with the server
+        chrome.runtime.sendMessage({ action: 'syncData' });
+      } else {
+        // Convert the data to a base64 string
+        const dataString = JSON.stringify(data);
+        const encodedData = btoa(encodeURIComponent(dataString));
+        
+        // Determine if we should pass a server URL parameter (when serverUrl is set but useServerDashboard is false)
+        let dashboardUrl = chrome.runtime.getURL(`/website/index.html?data=${encodedData}`);
+        
+        // Add server URL to parameters if available
+        if (settings.serverUrl) {
+          dashboardUrl += `&serverUrl=${encodeURIComponent(settings.serverUrl)}`;
+        }
+        
+        // Open the local web dashboard in a new tab with the data
+        chrome.tabs.create({ url: dashboardUrl });
+      }
+    });
+  });
 }
 
 // Function to check for old tabs
