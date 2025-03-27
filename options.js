@@ -268,24 +268,36 @@ function initMonthlyProgressChart(tabHistory) {
   const ctx = document.getElementById('monthlyProgressChart').getContext('2d');
   
   new Chart(ctx, {
-    type: 'bar',
+    type: 'line',
     data: {
       labels: labels,
       datasets: [
         {
           label: 'Maximum',
           data: maxCounts,
-          backgroundColor: 'rgba(231, 76, 60, 0.7)'
+          borderColor: 'rgba(231, 76, 60, 1)',
+          backgroundColor: 'rgba(231, 76, 60, 0.1)',
+          borderWidth: 2,
+          tension: 0.1,
+          fill: false
         },
         {
           label: 'Average',
           data: avgCounts,
-          backgroundColor: 'rgba(52, 152, 219, 0.7)'
+          borderColor: 'rgba(52, 152, 219, 1)',
+          backgroundColor: 'rgba(52, 152, 219, 0.1)',
+          borderWidth: 2,
+          tension: 0.1,
+          fill: false
         },
         {
           label: 'Minimum',
           data: minCounts,
-          backgroundColor: 'rgba(46, 204, 113, 0.7)'
+          borderColor: 'rgba(46, 204, 113, 1)',
+          backgroundColor: 'rgba(46, 204, 113, 0.1)',
+          borderWidth: 2,
+          tension: 0.1,
+          fill: false
         }
       ]
     },
@@ -361,7 +373,16 @@ function populateTabsTable(tabs) {
   document.querySelectorAll('.open-tab').forEach(button => {
     button.addEventListener('click', () => {
       const tabId = parseInt(button.getAttribute('data-id'));
-      chrome.tabs.update(tabId, { active: true });
+      chrome.tabs.update(tabId, { active: true }, function(tab) {
+        if (chrome.runtime.lastError) {
+          console.error('Error opening tab:', chrome.runtime.lastError);
+          showError(`Could not open tab: ${chrome.runtime.lastError.message}`);
+          // The tab might not exist anymore, we should update the UI
+          setTimeout(() => {
+            loadAndInitializeData(); // Refresh the data
+          }, 500);
+        }
+      });
     });
   });
   
@@ -373,6 +394,13 @@ function populateTabsTable(tabs) {
         if (!chrome.runtime.lastError) {
           const row = button.closest('tr');
           row.remove();
+        } else {
+          console.error('Error closing tab:', chrome.runtime.lastError);
+          showError(`Could not close tab: ${chrome.runtime.lastError.message}`);
+          // The tab might not exist anymore, we should update the UI
+          setTimeout(() => {
+            loadAndInitializeData(); // Refresh the data
+          }, 500);
         }
       });
     });
