@@ -19,9 +19,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   updateTabCounts(tabData);
   updateProgressBar(tabData);
   
-  // Initialize charts
-  initAgeDistributionChart(tabData);
-  initTrendChart(tabData);
+  // Check if Chart is available
+  if (typeof Chart === 'undefined') {
+    console.error('Chart.js library not loaded properly');
+    // Add fallback text for chart containers
+    document.querySelectorAll('.chart-container').forEach(container => {
+      const messageDiv = document.createElement('div');
+      messageDiv.textContent = 'Chart visualization unavailable';
+      messageDiv.style.textAlign = 'center';
+      messageDiv.style.padding = '20px';
+      messageDiv.style.color = '#999';
+      container.appendChild(messageDiv);
+    });
+  } else {
+    console.log('Chart.js loaded successfully, initializing charts');
+    // Initialize charts
+    initAgeDistributionChart(tabData);
+    initTrendChart(tabData);
+  }
   
   // Set up event listeners
   viewDetailsButton.addEventListener('click', openDetailView);
@@ -115,9 +130,11 @@ async function updateTabData() {
   updateTabCounts({ tabData: newTabData, tabHistory: updatedHistory, peakTabCount: newPeakTabCount });
   updateProgressBar({ tabData: newTabData, peakTabCount: newPeakTabCount });
   
-  // Update charts
-  initAgeDistributionChart({ tabData: newTabData });
-  initTrendChart({ tabHistory: updatedHistory });
+  // Update charts if Chart.js is available
+  if (typeof Chart !== 'undefined') {
+    initAgeDistributionChart({ tabData: newTabData });
+    initTrendChart({ tabHistory: updatedHistory });
+  }
   
   // Update badge
   chrome.runtime.sendMessage({ action: 'updateBadge' });
