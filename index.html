@@ -1,94 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tab Age Tracker Extension Download</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      line-height: 1.6;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-      color: #333;
-    }
-    
-    h1 {
-      color: #3498db;
-      border-bottom: 2px solid #eee;
-      padding-bottom: 10px;
-    }
-    
-    .download-box {
-      background-color: #f9f9f9;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      padding: 20px;
-      margin: 20px 0;
-    }
-    
-    .download-button {
-      display: inline-block;
-      background-color: #3498db;
-      color: white;
-      padding: 10px 20px;
-      text-decoration: none;
-      border-radius: 4px;
-      font-weight: bold;
-      margin-top: 10px;
-    }
-    
-    .download-button:hover {
-      background-color: #2980b9;
-    }
-    
-    .installation-steps {
-      margin-top: 30px;
-    }
-    
-    .installation-steps ol {
-      margin-left: 20px;
-    }
-    
-    .installation-steps li {
-      margin-bottom: 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tab Age Tracker</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 30px;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2196F3;
+            margin-top: 0;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #0d8bf2;
+        }
+        .download-section, .dashboard-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        h2 {
+            color: #555;
+        }
+        ul {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+    </style>
 </head>
 <body>
-  <h1>Tab Age Tracker Chrome Extension</h1>
-  
-  <p>This extension helps you track and manage your browser tabs by monitoring their age and providing analytics to help reduce tab clutter.</p>
-  
-  <div class="download-box">
-    <h2>Download Extension</h2>
-    <p>Click the button below to download the Tab Age Tracker extension package:</p>
-    <a href="tab-age-tracker.zip" download class="download-button">Download Extension (.zip)</a>
-  </div>
-  
-  <div class="installation-steps">
-    <h2>Installation Instructions</h2>
-    <ol>
-      <li>Download the extension zip file using the button above</li>
-      <li>Extract the zip file to a folder on your computer</li>
-      <li>Open Chrome and navigate to <code>chrome://extensions</code></li>
-      <li>Enable "Developer mode" by toggling the switch in the top right corner</li>
-      <li>Click "Load unpacked" and select the folder where you extracted the extension files</li>
-      <li>The Tab Age Tracker extension should now be installed and visible in your browser toolbar</li>
-    </ol>
-  </div>
-  
-  <div class="features">
-    <h2>Key Features</h2>
-    <ul>
-      <li>Tracks how long each tab has been open</li>
-      <li>Categorizes tabs by age (Today, This Week, This Month, Older)</li>
-      <li>Provides a visual dashboard with tab analytics</li>
-      <li>Notifies you about old tabs you might want to close</li>
-      <li>Shows your progress toward reducing your tab count</li>
-      <li>Export tab data for further analysis</li>
-    </ul>
-  </div>
+    <div class="container">
+        <h1>Tab Age Tracker - Chrome Extension</h1>
+        <p>Welcome to the Tab Age Tracker extension! This tool helps you manage and monitor your browser tabs with detailed analytics and insights.</p>
+        
+        <div class="download-section">
+            <h2>Download the Extension</h2>
+            <p>Get the latest version of the Tab Age Tracker Chrome extension:</p>
+            <a href="/tab-age-tracker.zip" class="button">Download Extension (ZIP)</a>
+            
+            <h3>Installation Instructions:</h3>
+            <ol>
+                <li>Download and unzip the file</li>
+                <li>Open Chrome and go to <code>chrome://extensions</code></li>
+                <li>Enable "Developer mode" (toggle switch in top-right)</li>
+                <li>Click "Load unpacked" and select the unzipped folder</li>
+                <li>The extension will appear in your browser toolbar</li>
+            </ol>
+        </div>
+        
+        <div class="dashboard-section">
+            <h2>Access the Web Dashboard</h2>
+            <p>View detailed analytics and manage your tabs through our web dashboard:</p>
+            <a href="/website/index.html" class="button">Open Web Dashboard</a>
+            
+            <h3>Features:</h3>
+            <ul>
+                <li>Comprehensive tab analytics and trends</li>
+                <li>Age-based tab categorization</li>
+                <li>Smart tab grouping suggestions</li>
+                <li>Historic tab usage data</li>
+            </ul>
+        </div>
+    </div>
 </body>
 </html>
