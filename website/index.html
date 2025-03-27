@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tab Age Tracker Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="../chart.js" defer></script>
+    <script src="../utils.js" defer></script>
+    <script src="dashboard.js" defer></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Tab Age Tracker Dashboard</h1>
+            <p class="subtitle">Advanced analytics for your browser tab management</p>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="import-section">
+            <h2>Import Your Tab Data</h2>
+            <p>To view your tab analytics, you need to import your data from the Tab Age Tracker extension.</p>
+            <p>You can do this in two ways:</p>
+            <ol>
+                <li>Use the "Export to Web Dashboard" button in the extension</li>
+                <li>Or upload your tab data directly below</li>
+            </ol>
+            <div class="upload-container">
+                <input type="file" id="import-file" accept=".json">
+                <button id="import-btn">Import Data</button>
+            </div>
+            <div id="import-status"></div>
+        </section>
+
+        <div id="dashboard-content" class="hidden">
+            <section class="summary-section">
+                <h2>Tab Summary</h2>
+                <div class="summary-cards">
+                    <div class="card">
+                        <h3>Current Count</h3>
+                        <div class="big-number" id="current-tab-count">0</div>
+                    </div>
+                    <div class="card">
+                        <h3>Peak Count</h3>
+                        <div class="big-number" id="peak-tab-count">0</div>
+                    </div>
+                    <div class="card">
+                        <h3>Progress to Tab Zero</h3>
+                        <div class="progress-container">
+                            <div class="progress-bar" id="tab-zero-progress"></div>
+                            <span id="progress-percentage">0%</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="distribution-section">
+                <h2>Tab Age Distribution</h2>
+                <div class="chart-container">
+                    <canvas id="distribution-chart"></canvas>
+                </div>
+                <div class="age-categories">
+                    <div class="category today">
+                        <span class="color-indicator"></span>
+                        <span class="category-name">Opened Today</span>
+                        <span class="tab-count" id="today-count">0</span>
+                    </div>
+                    <div class="category week">
+                        <span class="color-indicator"></span>
+                        <span class="category-name">Open 1-7 Days</span>
+                        <span class="tab-count" id="week-count">0</span>
+                    </div>
+                    <div class="category month">
+                        <span class="color-indicator"></span>
+                        <span class="category-name">Open 8-30 Days</span>
+                        <span class="tab-count" id="month-count">0</span>
+                    </div>
+                    <div class="category older">
+                        <span class="color-indicator"></span>
+                        <span class="category-name">Open >30 Days</span>
+                        <span class="tab-count" id="older-count">0</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="trend-section">
+                <h2>Tab Count Trend</h2>
+                <div class="chart-container">
+                    <canvas id="trend-chart"></canvas>
+                </div>
+            </section>
+
+            <section class="tabs-table-section">
+                <h2>All Tabs</h2>
+                <div class="filters">
+                    <div class="search-container">
+                        <input type="text" id="tab-search" placeholder="Search tabs...">
+                    </div>
+                    <div class="filter-container">
+                        <select id="age-filter">
+                            <option value="all">All Ages</option>
+                            <option value="today">Opened Today</option>
+                            <option value="week">Open 1-7 Days</option>
+                            <option value="month">Open 8-30 Days</option>
+                            <option value="older">Open >30 Days</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="table-container">
+                    <table id="tabs-table">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>URL</th>
+                                <th>Age</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabs-table-body">
+                            <!-- Tab rows will be added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Tab Age Tracker | <a href="privacy.html">Privacy Policy</a></p>
+        </div>
+    </footer>
+</body>
+</html>

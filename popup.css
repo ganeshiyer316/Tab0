@@ -83,7 +83,9 @@ h1 {
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
+  gap: 8px;
   margin-bottom: 16px;
 }
 
@@ -95,10 +97,22 @@ button {
   padding: 8px 16px;
   cursor: pointer;
   transition: background-color 0.2s;
+  flex: 1;
+  min-width: 80px;
+  margin: 0 4px;
 }
 
 button:hover {
   background-color: #2980b9;
+}
+
+button.primary-button {
+  background-color: #2ecc71;
+  font-weight: bold;
+}
+
+button.primary-button:hover {
+  background-color: #27ae60;
 }
 
 .progress-container {

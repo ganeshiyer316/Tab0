@@ -45,6 +45,12 @@ document.addEventListener('DOMContentLoaded', async () => {
   openOptionsButton.addEventListener('click', openOptionsPage);
   document.getElementById('checkOldTabs').addEventListener('click', checkForOldTabs);
   
+  // Add event listener for the web dashboard button if it exists
+  const webDashboardButton = document.getElementById('webDashboard');
+  if (webDashboardButton) {
+    webDashboardButton.addEventListener('click', openWebDashboard);
+  }
+  
   // Update the data (this will gather fresh data and update storage)
   await updateTabData();
 });
@@ -443,6 +449,16 @@ function openDetailView() {
 
 function openOptionsPage() {
   chrome.runtime.openOptionsPage();
+}
+
+/**
+ * Open the Web Dashboard in a new tab
+ * This function opens the web dashboard URL
+ */
+function openWebDashboard() {
+  // Open the web dashboard in a new tab
+  const dashboardUrl = chrome.runtime.getURL('/website/index.html');
+  chrome.tabs.create({ url: dashboardUrl });
 }
 
 // Function to check for old tabs

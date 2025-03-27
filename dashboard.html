@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tab Age Tracker - Web Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <header>
+        <h1>Tab Age Tracker Dashboard</h1>
+        <div class="upload-container">
+            <input type="file" id="importFile" accept=".json">
+            <button id="importButton">Import Tab Data</button>
+            <p class="hint">To view your data, export from the extension and import here</p>
+        </div>
+    </header>
+
+    <main>
+        <section id="summary" class="dashboard-card">
+            <h2>Tab Summary</h2>
+            <div id="tabSummary" class="summary-grid">
+                <div class="summary-item">
+                    <h3>Total Tabs</h3>
+                    <p id="totalTabs">-</p>
+                </div>
+                <div class="summary-item">
+                    <h3>Oldest Tab</h3>
+                    <p id="oldestTab">-</p>
+                </div>
+                <div class="summary-item">
+                    <h3>Average Age</h3>
+                    <p id="averageAge">-</p>
+                </div>
+                <div class="summary-item">
+                    <h3>Peak Tab Count</h3>
+                    <p id="peakTabCount">-</p>
+                </div>
+            </div>
+        </section>
+
+        <div class="chart-container">
+            <section id="ageDistribution" class="dashboard-card">
+                <h2>Tab Age Distribution</h2>
+                <div class="chart-wrapper">
+                    <canvas id="ageDistributionChart"></canvas>
+                </div>
+            </section>
+            
+            <section id="tabTrend" class="dashboard-card">
+                <h2>Tab Count Trend</h2>
+                <div class="chart-wrapper">
+                    <canvas id="tabTrendChart"></canvas>
+                </div>
+            </section>
+        </div>
+
+        <section id="tabProgress" class="dashboard-card">
+            <h2>Progress to Tab Zero</h2>
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div id="progressBar" class="progress-fill"></div>
+                </div>
+                <div class="progress-label">
+                    <span id="progressPercentage">0%</span> complete
+                </div>
+            </div>
+            <p>Peak: <span id="peakCount">-</span> tabs</p>
+        </section>
+
+        <section id="tabDetails" class="dashboard-card">
+            <h2>Tab Details</h2>
+            <div class="filters">
+                <input type="text" id="searchInput" placeholder="Search tabs...">
+                <select id="categoryFilter">
+                    <option value="all">All Categories</option>
+                    <option value="today">Opened Today</option>
+                    <option value="week">Open 1-7 Days</option>
+                    <option value="month">Open 8-30 Days</option>
+                    <option value="older">Open >30 Days</option>
+                </select>
+            </div>
+            <table id="tabsTable">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>URL</th>
+                        <th>Age</th>
+                        <th>Category</th>
+                    </tr>
+                </thead>
+                <tbody id="tabsList">
+                    <!-- Tab data will be inserted here -->
+                </tbody>
+            </table>
+        </section>
+    </main>
+
+    <footer>
+        <p>Tab Age Tracker Web Dashboard v1.0 | <a href="https://github.com/yourusername/tab-age-tracker" target="_blank">GitHub</a></p>
+    </footer>
+
+    <script src="chart.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>

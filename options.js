@@ -423,6 +423,13 @@ function setupEventListeners() {
   const exportJsonBtn = document.getElementById('exportJsonBtn');
   exportJsonBtn.addEventListener('click', exportTabsToJson);
   
+  // Web Dashboard buttons
+  const openWebDashboardBtn = document.getElementById('openWebDashboardBtn');
+  openWebDashboardBtn.addEventListener('click', openWebDashboard);
+  
+  const exportToWebDashboardBtn = document.getElementById('exportToWebDashboardBtn');
+  exportToWebDashboardBtn.addEventListener('click', exportToWebDashboard);
+  
   // Import button
   const importJsonBtn = document.getElementById('importJsonBtn');
   importJsonBtn.addEventListener('click', importTabsFromJson);
@@ -754,4 +761,40 @@ function showError(message) {
       document.body.removeChild(errorElement);
     }, 500);
   }, 5000);
+}
+
+// Function to open the web dashboard (empty for now)
+function openWebDashboard() {
+  // Open the web dashboard in a new tab
+  const dashboardUrl = chrome.runtime.getURL('/website/index.html');
+  chrome.tabs.create({ url: dashboardUrl });
+}
+
+// Function to export data directly to the web dashboard
+async function exportToWebDashboard() {
+  try {
+    const data = await new Promise((resolve) => {
+      chrome.storage.local.get(['tabData', 'tabHistory', 'peakTabCount', 'settings'], resolve);
+    });
+    
+    if (!data.tabData || !data.tabData.tabs || data.tabData.tabs.length === 0) {
+      showError('No tab data to export to the dashboard.');
+      return;
+    }
+    
+    // Convert data to Base64 to avoid URL issues
+    const jsonString = JSON.stringify(data);
+    const base64Data = btoa(jsonString);
+    
+    // Create dashboard URL with data parameter
+    const dashboardUrl = chrome.runtime.getURL(`/website/index.html?data=${encodeURIComponent(base64Data)}`);
+    
+    // Open in a new tab
+    chrome.tabs.create({ url: dashboardUrl });
+    
+    showMessage('Data exported to web dashboard successfully.');
+  } catch (error) {
+    console.error('Error exporting to web dashboard:', error);
+    showError('Failed to export data to web dashboard. Please try again.');
+  }
 }
