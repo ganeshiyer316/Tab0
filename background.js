@@ -358,22 +358,20 @@ async function captureCurrentTabsWithDistribution() {
       // Distribute tabs across age categories: Opened Today, Open 1-7 Days, Open 8-30 Days, Open >30 Days
       const totalTabs = tabs.length;
       
-      if (index < Math.floor(totalTabs * 0.4)) {
-        // 40% of tabs - Opened Today (0-24 hours old)
-        const randomHours = Math.floor(Math.random() * 24);
-        createdAt = new Date(now - randomHours * 60 * 60 * 1000);
-      } else if (index < Math.floor(totalTabs * 0.6)) {
-        // 20% of tabs - Open 1-7 Days
-        const randomDays = 1 + Math.floor(Math.random() * 6); // 1-7 days
-        createdAt = new Date(now - randomDays * 24 * 60 * 60 * 1000);
-      } else if (index < Math.floor(totalTabs * 0.8)) {
-        // 20% of tabs - Open 8-30 Days
-        const randomDays = 8 + Math.floor(Math.random() * 22); // 8-30 days
-        createdAt = new Date(now - randomDays * 24 * 60 * 60 * 1000);
+      // Let's assign more predictable and reliable dates to make debugging easier
+      // and to ensure the distribution is accurate
+      if (index < Math.floor(totalTabs * 0.25)) {
+        // 25% of tabs - Opened Today (0-24 hours old) - exactly 12 hours old
+        createdAt = new Date(now.getTime() - 12 * 60 * 60 * 1000);
+      } else if (index < Math.floor(totalTabs * 0.5)) {
+        // 25% of tabs - Open 1-7 Days - exactly 3 days old
+        createdAt = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
+      } else if (index < Math.floor(totalTabs * 0.75)) {
+        // 25% of tabs - Open 8-30 Days - exactly 15 days old
+        createdAt = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
       } else {
-        // 20% of tabs - Open >30 Days
-        const randomDays = 31 + Math.floor(Math.random() * 59); // 31-90 days
-        createdAt = new Date(now - randomDays * 24 * 60 * 60 * 1000);
+        // 25% of tabs - Open >30 Days - exactly 45 days old
+        createdAt = new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000);
       }
       
       return {
