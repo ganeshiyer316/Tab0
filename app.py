@@ -1,10 +1,10 @@
 import os
 import json
 import base64
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, jsonify, send_from_directory, redirect
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import func, cast, Date
+from sqlalchemy import func, cast, Date, text
 import pandas as pd
 import urllib.parse
 from collections import defaultdict
@@ -141,6 +141,45 @@ def get_trend_data():
         return jsonify(result)
         
     except Exception as e:
+        return jsonify({"error": str(e)}), 500
+        
+@app.route('/api/stats/daily-progress', methods=['GET'])
+def get_daily_progress():
+    """Get daily progress data for the dashboard"""
+    try:
+        # Get the last 14 days of snapshots from the database
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=14)
+        
+        # Get one snapshot per day for the date range
+        progress_data = db.session.query(
+            cast(TabSnapshot.timestamp, Date).label('date'),
+            func.avg(TabSnapshot.count).label('avg_count'),
+            func.min(TabSnapshot.count).label('min_count'),
+            func.max(TabSnapshot.count).label('max_count')
+        ).filter(
+            TabSnapshot.timestamp.between(start_date, end_date)
+        ).group_by(
+            cast(TabSnapshot.timestamp, Date)
+        ).order_by(
+            cast(TabSnapshot.timestamp, Date)
+        ).all()
+        
+        # Format the result
+        result = [
+            {
+                'date': item.date.isoformat(),
+                'avg': round(item.avg_count),
+                'min': item.min_count,
+                'max': item.max_count
+            }
+            for item in progress_data
+        ]
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        app.logger.error(f"Error getting daily progress data: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/stats/distribution', methods=['GET'])

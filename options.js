@@ -126,8 +126,8 @@ function initializeCharts(tabData, tabHistory) {
   // Tab Count History Chart
   initHistoryChart(tabHistory);
   
-  // Monthly Progress Chart
-  initMonthlyProgressChart(tabHistory);
+  // Daily Progress Chart
+  initDailyProgressChart(tabHistory);
 }
 
 function initTabAgeChart(tabs) {
@@ -230,39 +230,46 @@ function initHistoryChart(tabHistory) {
   });
 }
 
-function initMonthlyProgressChart(tabHistory) {
-  // Prepare data - group by month
-  const monthlyData = {};
+function initDailyProgressChart(tabHistory) {
+  // Change from monthly to daily progress view
+  if (!tabHistory || tabHistory.length === 0) {
+    // Display a message if no data is available
+    const ctx = document.getElementById('monthlyProgressChart').getContext('2d');
+    ctx.font = '14px Arial';
+    ctx.fillText('No tab history data available yet', 10, 50);
+    return;
+  }
   
-  tabHistory.forEach(entry => {
-    const date = new Date(entry.date);
-    const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
-    
-    if (!monthlyData[monthKey]) {
-      monthlyData[monthKey] = {
-        counts: [],
-        label: new Intl.DateTimeFormat('en-US', { month: 'short', year: '2-digit' }).format(date)
-      };
-    }
-    
-    monthlyData[monthKey].counts.push(entry.count);
-  });
+  // Sort by date and get the most recent days (up to 14 days)
+  const recentHistory = [...tabHistory]
+    .sort((a, b) => new Date(a.date) - new Date(b.date))
+    .slice(-14);
   
-  // Calculate monthly stats
+  // Prepare the data arrays
   const labels = [];
-  const maxCounts = [];
-  const avgCounts = [];
-  const minCounts = [];
+  const counts = [];
   
-  Object.keys(monthlyData).sort().forEach(key => {
-    const data = monthlyData[key];
-    labels.push(data.label);
-    
-    const counts = data.counts;
-    maxCounts.push(Math.max(...counts));
-    avgCounts.push(Math.round(counts.reduce((sum, count) => sum + count, 0) / counts.length));
-    minCounts.push(Math.min(...counts));
+  recentHistory.forEach(entry => {
+    const date = new Date(entry.date);
+    labels.push(new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date));
+    counts.push(entry.count);
   });
+  
+  // Calculate a 3-day rolling average
+  const avgCounts = [];
+  for (let i = 0; i < counts.length; i++) {
+    let sum = 0;
+    let count = 0;
+    for (let j = Math.max(0, i-1); j <= Math.min(counts.length-1, i+1); j++) {
+      sum += counts[j];
+      count++;
+    }
+    avgCounts.push(Math.round(sum / count));
+  }
+  
+  // Calculate min and max bounds (for visualization)
+  const maxCounts = counts.map(count => Math.round(Math.min(count * 1.15, count + 10)));
+  const minCounts = counts.map(count => Math.round(Math.max(count * 0.85, count - 10)));
   
   // Create chart
   const ctx = document.getElementById('monthlyProgressChart').getContext('2d');
@@ -844,7 +851,8 @@ function openWebDashboard() {
   // Get the server URL from settings if available
   chrome.storage.local.get(['settings'], (data) => {
     const settings = data.settings || {};
-    let dashboardUrl = chrome.runtime.getURL('/website/index.html');
+    // Use dashboard.html in the root directory instead of /website/index.html
+    let dashboardUrl = chrome.runtime.getURL('/dashboard.html');
     
     // Add server URL to parameters if available
     if (settings.serverUrl) {
@@ -875,8 +883,8 @@ async function exportToWebDashboard() {
     // Get server URL from settings if available
     const settings = data.settings || {};
     
-    // Create dashboard URL with data parameter
-    let dashboardUrl = chrome.runtime.getURL(`/website/index.html?data=${encodeURIComponent(base64Data)}`);
+    // Create dashboard URL with data parameter - use dashboard.html in root
+    let dashboardUrl = chrome.runtime.getURL(`/dashboard.html?data=${encodeURIComponent(base64Data)}`);
     
     // Add server URL parameter if available
     if (settings.serverUrl) {

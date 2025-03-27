@@ -347,31 +347,82 @@ async function captureCurrentTabsWithDistribution() {
     let tabHistory = data.tabHistory || [];
     let peakTabCount = data.peakTabCount || 0;
     
-    // Process current tabs with distributed creation times
+    // Process current tabs using more intelligent creation time assignment
     const now = new Date();
-    const processedTabs = tabs.map((tab, index) => {
-      // For initial tabs, distribute them across time periods
-      // This provides a more realistic view than marking all tabs as "new"
+    const processedTabs = tabs.map((tab) => {
+      // For initial tabs, we'll use heuristics to assign more realistic creation dates
       let createdAt;
       
-      // Calculate a creation date based on the tab's index
-      // Distribute tabs across age categories: Opened Today, Open 1-7 Days, Open 8-30 Days, Open >30 Days
-      const totalTabs = tabs.length;
+      // First try to extract dates from URL or title for specific patterns
+      // Check for date patterns in URL (like /2024/01/ or /2024-01-01/ or month names)
+      const datePatterns = [
+        { regex: /\/(20\d{2})[\/\-_](\d{1,2})[\/\-_](\d{1,2})\//, groups: [1, 2, 3] }, // /2024/01/01/
+        { regex: /\/(20\d{2})[\-\/]?(\d{1,2})[\-\/]?(\d{1,2})/, groups: [1, 2, 3] },   // /2024-01-01
+        { regex: /\/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[\/\-_](20\d{2})/, // /jan-2024/
+          process: (match) => {
+            const months = {jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, 
+                           jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11};
+            return new Date(parseInt(match[2]), months[match[1].toLowerCase()], 15);
+          }
+        }
+      ];
       
-      // Let's assign more predictable and reliable dates to make debugging easier
-      // and to ensure the distribution is accurate
-      if (index < Math.floor(totalTabs * 0.25)) {
-        // 25% of tabs - Opened Today (0-24 hours old) - exactly 12 hours old
-        createdAt = new Date(now.getTime() - 12 * 60 * 60 * 1000);
-      } else if (index < Math.floor(totalTabs * 0.5)) {
-        // 25% of tabs - Open 1-7 Days - exactly 3 days old
-        createdAt = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000);
-      } else if (index < Math.floor(totalTabs * 0.75)) {
-        // 25% of tabs - Open 8-30 Days - exactly 15 days old
-        createdAt = new Date(now.getTime() - 15 * 24 * 60 * 60 * 1000);
-      } else {
-        // 25% of tabs - Open >30 Days - exactly 45 days old
-        createdAt = new Date(now.getTime() - 45 * 24 * 60 * 60 * 1000);
+      // Try each pattern
+      let dateFound = false;
+      for (const pattern of datePatterns) {
+        const urlMatch = tab.url.toLowerCase().match(pattern.regex);
+        if (urlMatch) {
+          if (pattern.process) {
+            // Custom processing function
+            createdAt = pattern.process(urlMatch);
+          } else {
+            // Standard group extraction
+            const year = parseInt(urlMatch[pattern.groups[0]]);
+            const month = parseInt(urlMatch[pattern.groups[1]]) - 1; // JS months are 0-indexed
+            const day = parseInt(urlMatch[pattern.groups[2]]);
+            createdAt = new Date(year, month, day);
+          }
+          
+          // Verify the date is valid and in the past
+          if (!isNaN(createdAt) && createdAt < now) {
+            dateFound = true;
+            break;
+          }
+        }
+      }
+      
+      // Check for year/month keywords in title if no date found in URL
+      if (!dateFound) {
+        // Look for specific cases like "Things we learned in 2024"
+        const yearTitleMatch = tab.title.match(/(20\d{2})/);
+        if (yearTitleMatch && tab.title.toLowerCase().includes('learn')) {
+          const year = parseInt(yearTitleMatch[1]);
+          // Assume it's from December of that year
+          createdAt = new Date(year, 11, 15); // December 15th of that year
+          dateFound = true;
+        }
+      }
+      
+      // If we still don't have a date, use tab ID as a proxy for age
+      if (!dateFound) {
+        // Use tab ID - generally, lower IDs are older tabs
+        // Find the lowest and highest tab IDs to create a relative scale
+        const tabIds = tabs.map(t => t.id);
+        const minTabId = Math.min(...tabIds);
+        const maxTabId = Math.max(...tabIds);
+        const range = maxTabId - minTabId;
+        
+        if (range > 0) {
+          // Scale the tab's position in the ID range to days (newer tabs = higher IDs)
+          const relativeAge = (tab.id - minTabId) / range;
+          const maxAgeDays = 90; // Maximum age in days (3 months)
+          // Older tabs (lower IDs) get older dates
+          const estimatedAgeDays = Math.floor((1 - relativeAge) * maxAgeDays);
+          createdAt = new Date(now.getTime() - estimatedAgeDays * 24 * 60 * 60 * 1000);
+        } else {
+          // Fallback if all tab IDs are the same (unlikely)
+          createdAt = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)); // Default to 1 week old
+        }
       }
       
       return {

@@ -5,8 +5,10 @@
 // Global variables
 let tabData = null;
 let tabHistory = null;
+let dailyProgressData = null;
 let ageDistributionChart = null;
 let tabTrendChart = null;
+let dailyProgressChart = null;
 
 // Initialize the dashboard
 document.addEventListener('DOMContentLoaded', () => {
@@ -88,39 +90,170 @@ function processImportedData(data) {
  * Update the dashboard with the current tab data
  */
 function updateDashboard() {
-    if (!tabData || !tabHistory) return;
+    // Fetch distribution data from server
+    fetch('/api/stats/distribution')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showError("Error fetching distribution data: " + data.error);
+                return;
+            }
+            
+            // Update tabData if it doesn't exist
+            if (!tabData) {
+                // We don't have actual tab data from the server, create a simple placeholder
+                // This will be replaced when real data is imported from the extension
+                tabData = [];
+            }
+            
+            // Update summary statistics with distribution data
+            updateSummaryStats(data);
+            
+            // Initialize age distribution chart
+            initAgeDistributionChart();
+        })
+        .catch(error => {
+            showError("Error fetching distribution data: " + error);
+        });
     
-    // Update summary statistics
-    updateSummaryStats();
+    // Fetch trend data from server
+    fetch('/api/stats/trend')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showError("Error fetching trend data: " + data.error);
+                return;
+            }
+            
+            // Update trend data
+            tabHistory = data.map(entry => ({
+                date: entry.date,
+                count: entry.avg
+            }));
+            
+            // Initialize trend chart
+            initTabTrendChart();
+        })
+        .catch(error => {
+            showError("Error fetching trend data: " + error);
+        });
     
-    // Initialize or update charts
-    initializeCharts();
-    
-    // Populate the tabs table
-    populateTabsTable();
+    // Fetch daily progress data from server
+    fetch('/api/stats/daily-progress')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showError("Error fetching daily progress data: " + data.error);
+                return;
+            }
+            
+            // Update daily progress data
+            dailyProgressData = data;
+            
+            // Initialize daily progress chart
+            initDailyProgressChart();
+        })
+        .catch(error => {
+            showError("Error fetching daily progress data: " + error);
+        });
+        
+    // Fetch tab group suggestions
+    fetch('/api/suggest/groups')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showError("Error fetching group suggestions: " + data.error);
+                return;
+            }
+            
+            // Update suggested groups container
+            const container = document.getElementById('suggested-groups-container');
+            
+            if (data.length === 0) {
+                container.innerHTML = '<p>No tab groups suggestions available. Please sync your data from the extension.</p>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            // Create a card for each suggestion
+            data.forEach(group => {
+                const card = document.createElement('div');
+                card.className = 'group-suggestion';
+                card.innerHTML = `
+                    <h3>${sanitize(group.name)} (${group.count} tabs)</h3>
+                    <p>${sanitize(group.reason)}</p>
+                    <p>Oldest tab: ${group.oldest_age} days</p>
+                    <details>
+                        <summary>View tabs</summary>
+                        <ul class="tab-list">
+                            ${group.tabs.map(tab => `
+                                <li>
+                                    <a href="${sanitize(tab.url)}" title="${sanitize(tab.title)}" target="_blank">
+                                        ${truncateString(sanitize(tab.title), 50)}
+                                    </a>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </details>
+                `;
+                container.appendChild(card);
+            });
+        })
+        .catch(error => {
+            showError("Error fetching group suggestions: " + error);
+        });
+        
+    // If we have tabData with individual tabs, populate the table
+    if (tabData && tabData.length > 0) {
+        populateTabsTable();
+    }
 }
 
 /**
  * Update the summary statistics section
  */
-function updateSummaryStats() {
-    const totalTabs = tabData.length;
+function updateSummaryStats(distributionData) {
+    let totalTabs = 0;
     let oldestTabAge = 0;
     let totalAge = 0;
     let peakTabCount = 0;
     
-    // Calculate statistics
-    tabData.forEach(tab => {
-        const age = getDaysSince(tab.createdAt);
-        totalAge += age;
-        if (age > oldestTabAge) {
-            oldestTabAge = age;
+    // If we have distribution data from the server
+    if (distributionData) {
+        // Get tab count and peak from distribution data
+        totalTabs = distributionData.count || 0;
+        peakTabCount = distributionData.peak || 0;
+        
+        // Calculate estimated average age from distribution
+        if (totalTabs > 0 && distributionData.distribution) {
+            const todayCount = distributionData.distribution.find(d => d.category === 'Today')?.count || 0;
+            const weekCount = distributionData.distribution.find(d => d.category === 'This Week')?.count || 0;
+            const monthCount = distributionData.distribution.find(d => d.category === 'This Month')?.count || 0;
+            const olderCount = distributionData.distribution.find(d => d.category === 'Older')?.count || 0;
+            
+            // Rough estimates: today=0.5, week=3.5, month=15, older=45
+            totalAge = (0.5 * todayCount + 3.5 * weekCount + 15 * monthCount + 45 * olderCount);
+            oldestTabAge = olderCount > 0 ? 45 : monthCount > 0 ? 15 : weekCount > 0 ? 3.5 : 0.5;
         }
-    });
-    
-    // Get peak tab count from history
-    if (tabHistory.length > 0) {
-        peakTabCount = Math.max(...tabHistory.map(entry => entry.count));
+    }
+    // If we have detailed tab data (from extension)
+    else if (tabData && tabData.length > 0) {
+        totalTabs = tabData.length;
+        
+        // Calculate statistics from tab data
+        tabData.forEach(tab => {
+            const age = getDaysSince(tab.createdAt);
+            totalAge += age;
+            if (age > oldestTabAge) {
+                oldestTabAge = age;
+            }
+        });
+        
+        // Get peak tab count from history
+        if (tabHistory && tabHistory.length > 0) {
+            peakTabCount = Math.max(...tabHistory.map(entry => entry.count));
+        }
     }
     
     // Update the UI
@@ -142,48 +275,144 @@ function updateSummaryStats() {
 function initializeCharts() {
     initAgeDistributionChart();
     initTabTrendChart();
+    initDailyProgressChart();
 }
 
 /**
  * Initialize or update the age distribution chart
  */
 function initAgeDistributionChart() {
-    // Group tabs by age category
-    const categories = {
-        'today': 0,
-        'week': 0,
-        'month': 0,
-        'older': 0
-    };
-    
-    tabData.forEach(tab => {
-        const days = getDaysSince(tab.createdAt);
-        if (days < 1) {
-            categories.today++;
-        } else if (days < 8) {
-            categories.week++;
-        } else if (days < 31) {
-            categories.month++;
-        } else {
-            categories.older++;
-        }
-    });
-    
+    // Get distribution data from the server if available
+    fetch('/api/stats/distribution')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error("Error fetching distribution data:", data.error);
+                return;
+            }
+            
+            // Set up the distribution data
+            let chartData;
+            
+            // If we have server data
+            if (data && data.distribution) {
+                chartData = {
+                    labels: [],
+                    data: []
+                };
+                
+                // Map server data to chart format
+                data.distribution.forEach(item => {
+                    chartData.labels.push(item.category);
+                    chartData.data.push(item.count);
+                });
+            }
+            // Otherwise, use local tab data if we have it
+            else if (tabData && tabData.length > 0) {
+                // Group tabs by age category
+                const categories = {
+                    'today': 0,
+                    'week': 0,
+                    'month': 0,
+                    'older': 0
+                };
+                
+                tabData.forEach(tab => {
+                    const days = getDaysSince(tab.createdAt);
+                    if (days < 1) {
+                        categories.today++;
+                    } else if (days < 8) {
+                        categories.week++;
+                    } else if (days < 31) {
+                        categories.month++;
+                    } else {
+                        categories.older++;
+                    }
+                });
+                
+                chartData = {
+                    labels: [
+                        'Opened Today',
+                        'Open 1-7 Days',
+                        'Open 8-30 Days',
+                        'Open >30 Days'
+                    ],
+                    data: [
+                        categories.today,
+                        categories.week,
+                        categories.month,
+                        categories.older
+                    ]
+                };
+            }
+            // If we have no data, use empty values
+            else {
+                chartData = {
+                    labels: [
+                        'Opened Today',
+                        'Open 1-7 Days',
+                        'Open 8-30 Days',
+                        'Open >30 Days'
+                    ],
+                    data: [0, 0, 0, 0]
+                };
+            }
+            
+            // Create and update the chart
+            updateAgeDistributionChart(chartData);
+        })
+        .catch(error => {
+            console.error("Error fetching distribution data:", error);
+            
+            // Fallback to local data if available
+            if (tabData && tabData.length > 0) {
+                // Group tabs by age category
+                const categories = {
+                    'today': 0,
+                    'week': 0,
+                    'month': 0,
+                    'older': 0
+                };
+                
+                tabData.forEach(tab => {
+                    const days = getDaysSince(tab.createdAt);
+                    if (days < 1) {
+                        categories.today++;
+                    } else if (days < 8) {
+                        categories.week++;
+                    } else if (days < 31) {
+                        categories.month++;
+                    } else {
+                        categories.older++;
+                    }
+                });
+                
+                const chartData = {
+                    labels: [
+                        'Opened Today',
+                        'Open 1-7 Days',
+                        'Open 8-30 Days',
+                        'Open >30 Days'
+                    ],
+                    data: [
+                        categories.today,
+                        categories.week,
+                        categories.month,
+                        categories.older
+                    ]
+                };
+                
+                updateAgeDistributionChart(chartData);
+            }
+        });
+}
+
+function updateAgeDistributionChart(chartData) {
     // Set up chart data
     const data = {
-        labels: [
-            'Opened Today',
-            'Open 1-7 Days',
-            'Open 8-30 Days',
-            'Open >30 Days'
-        ],
+        labels: chartData.labels,
         datasets: [{
-            data: [
-                categories.today,
-                categories.week,
-                categories.month,
-                categories.older
-            ],
+            data: chartData.data,
             backgroundColor: [
                 '#4CAF50',  // Green for today
                 '#2196F3',  // Blue for week
@@ -223,8 +452,128 @@ function initAgeDistributionChart() {
 }
 
 /**
- * Initialize or update the tab trend chart
+ * Initialize or update the daily progress chart
  */
+function initDailyProgressChart() {
+    // Use dailyProgressData from server if available, otherwise fallback to tabHistory
+    const progressData = dailyProgressData || tabHistory;
+    
+    if (!progressData || progressData.length === 0) {
+        console.log('No data for daily progress chart');
+        return;
+    }
+    
+    // Get the most recent data (up to 14 days)
+    const recentData = [...progressData]
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(-14);
+    
+    // Prepare the data arrays
+    const labels = [];
+    const avgCounts = [];
+    const minCounts = [];
+    const maxCounts = [];
+    
+    recentData.forEach(entry => {
+        const date = new Date(entry.date);
+        labels.push(new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date));
+        
+        // If we have detailed data from the server
+        if (entry.avg !== undefined) {
+            avgCounts.push(entry.avg);
+            minCounts.push(entry.min);
+            maxCounts.push(entry.max);
+        }
+        // Fallback to calculated values if using tabHistory
+        else {
+            const count = entry.count;
+            avgCounts.push(count);
+            minCounts.push(Math.round(Math.max(count * 0.85, count - 10)));
+            maxCounts.push(Math.round(Math.min(count * 1.15, count + 10)));
+        }
+    });
+    
+    // Set up chart data
+    const data = {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Maximum',
+                data: maxCounts,
+                borderColor: 'rgba(231, 76, 60, 1)',
+                backgroundColor: 'rgba(231, 76, 60, 0.1)',
+                borderWidth: 2,
+                tension: 0.1,
+                fill: false
+            },
+            {
+                label: 'Average',
+                data: avgCounts,
+                borderColor: 'rgba(52, 152, 219, 1)',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                borderWidth: 2,
+                tension: 0.1,
+                fill: false
+            },
+            {
+                label: 'Minimum',
+                data: minCounts,
+                borderColor: 'rgba(46, 204, 113, 1)',
+                backgroundColor: 'rgba(46, 204, 113, 0.1)',
+                borderWidth: 2,
+                tension: 0.1,
+                fill: false
+            }
+        ]
+    };
+    
+    const ctx = document.getElementById('dailyProgressChart');
+    
+    // If the chart element doesn't exist yet, create it
+    if (!ctx) {
+        const container = document.querySelector('.charts-container');
+        const chartDiv = document.createElement('div');
+        chartDiv.className = 'chart-card';
+        chartDiv.innerHTML = `
+            <h2>Daily Progress</h2>
+            <div class="chart-container">
+                <canvas id="dailyProgressChart"></canvas>
+            </div>
+        `;
+        container.appendChild(chartDiv);
+    }
+    
+    // Get the context (might have just been created)
+    const chartContext = document.getElementById('dailyProgressChart').getContext('2d');
+    
+    // Create or update the chart
+    if (window.dailyProgressChart) {
+        window.dailyProgressChart.destroy();
+    }
+    
+    window.dailyProgressChart = new Chart(chartContext, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            }
+        }
+    });
+}
+
 function initTabTrendChart() {
     // Prepare data for chart
     const dates = [];

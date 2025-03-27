@@ -476,7 +476,8 @@ function openWebDashboard() {
         const encodedData = btoa(encodeURIComponent(dataString));
         
         // Determine if we should pass a server URL parameter (when serverUrl is set but useServerDashboard is false)
-        let dashboardUrl = chrome.runtime.getURL(`/website/index.html?data=${encodedData}`);
+        // Note: The dashboard.html is in the root directory, not in a /website folder
+        let dashboardUrl = chrome.runtime.getURL(`/dashboard.html?data=${encodedData}`);
         
         // Add server URL to parameters if available
         if (settings.serverUrl) {
