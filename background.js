@@ -351,24 +351,24 @@ async function captureCurrentTabsWithDistribution() {
       let createdAt;
       
       // Calculate a creation date based on the tab's index
-      // Distribute tabs across age categories: Today, This Week, This Month, Older
+      // Distribute tabs across age categories: Opened Today, Open 1-7 Days, Open 8-30 Days, Open >30 Days
       const totalTabs = tabs.length;
       
       if (index < Math.floor(totalTabs * 0.4)) {
-        // 40% of tabs - Today (0-24 hours old)
+        // 40% of tabs - Opened Today (0-24 hours old)
         const randomHours = Math.floor(Math.random() * 24);
         createdAt = new Date(now - randomHours * 60 * 60 * 1000);
       } else if (index < Math.floor(totalTabs * 0.6)) {
-        // 20% of tabs - This Week (1-7 days old)
+        // 20% of tabs - Open 1-7 Days
         const randomDays = 1 + Math.floor(Math.random() * 6); // 1-7 days
         createdAt = new Date(now - randomDays * 24 * 60 * 60 * 1000);
       } else if (index < Math.floor(totalTabs * 0.8)) {
-        // 20% of tabs - This Month (7-30 days old)
-        const randomDays = 7 + Math.floor(Math.random() * 23); // 7-30 days
+        // 20% of tabs - Open 8-30 Days
+        const randomDays = 8 + Math.floor(Math.random() * 22); // 8-30 days
         createdAt = new Date(now - randomDays * 24 * 60 * 60 * 1000);
       } else {
-        // 20% of tabs - Older (30+ days old)
-        const randomDays = 30 + Math.floor(Math.random() * 60); // 30-90 days
+        // 20% of tabs - Open >30 Days
+        const randomDays = 31 + Math.floor(Math.random() * 59); // 31-90 days
         createdAt = new Date(now - randomDays * 24 * 60 * 60 * 1000);
       }
       

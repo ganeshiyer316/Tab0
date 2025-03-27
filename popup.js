@@ -252,7 +252,11 @@ function initAgeDistributionChart(data) {
   });
   
   // Check if chart already exists
-  if (window.ageDistributionChart) {
+  if (window.ageDistributionChart && window.ageDistributionChart.data) {
+    // Ensure chart data structure exists before updating
+    if (!window.ageDistributionChart.data.datasets || window.ageDistributionChart.data.datasets.length === 0) {
+      window.ageDistributionChart.data.datasets = [{}];
+    }
     window.ageDistributionChart.data.labels = filteredLabels;
     window.ageDistributionChart.data.datasets[0].data = filteredData;
     window.ageDistributionChart.data.datasets[0].backgroundColor = filteredColors;
@@ -372,7 +376,11 @@ function createOrUpdateTrendChart(chartData, ctx) {
   }
   
   // Check if chart already exists
-  if (window.trendChart) {
+  if (window.trendChart && window.trendChart.data) {
+    // Ensure chart data structure exists before updating
+    if (!window.trendChart.data.datasets || window.trendChart.data.datasets.length === 0) {
+      window.trendChart.data.datasets = [{}];
+    }
     window.trendChart.data.labels = labels;
     window.trendChart.data.datasets[0].data = counts;
     window.trendChart.update();

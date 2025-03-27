@@ -478,12 +478,16 @@ async function applyFilters() {
       
       switch (ageFilterValue) {
         case 'today':
+          // Opened Today (0-24 hours)
           return age < oneDay;
         case 'week':
+          // Open 1-7 Days
           return age >= oneDay && age < oneWeek;
         case 'month':
+          // Open 8-30 Days
           return age >= oneWeek && age < oneMonth;
         case 'older':
+          // Open >30 Days
           return age >= oneMonth;
         default:
           return true;

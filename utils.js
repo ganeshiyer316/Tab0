@@ -53,18 +53,23 @@ function calculateTabAge(createdAt) {
   let ageLabel;
   
   if (diffDays < 1) {
+    // Opened Today
     ageCategory = 'today';
     ageLabel = 'Today';
   } else if (diffDays === 1) {
+    // Opened Yesterday
     ageCategory = 'yesterday';
     ageLabel = 'Yesterday';
   } else if (diffDays < 7) {
+    // Open 1-7 Days
     ageCategory = 'week';
     ageLabel = `${diffDays} days`;
-  } else if (diffWeeks < 4) {
+  } else if (diffDays < 30) {
+    // Open 8-30 Days
     ageCategory = 'month';
     ageLabel = `${diffWeeks} week${diffWeeks === 1 ? '' : 's'}`;
   } else {
+    // Open >30 Days
     ageCategory = 'older';
     ageLabel = `${diffMonths} month${diffMonths === 1 ? '' : 's'}`;
   }
