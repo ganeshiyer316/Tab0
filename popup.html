@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tab Age Tracker</title>
   <link rel="stylesheet" href="popup.css">
-  <script src="chart.js"></script>
+  <!-- Chart.js will be loaded at the end of the body -->
 </head>
 <body>
   <div class="container">
@@ -18,19 +18,19 @@
 
     <div class="stats-overview">
       <div class="stat-card">
-        <div class="stat-title">Today</div>
+        <div class="stat-title">Opened Today</div>
         <div class="stat-value" id="todayCount">0</div>
       </div>
       <div class="stat-card">
-        <div class="stat-title">This Week</div>
+        <div class="stat-title">Open 1-7 Days</div>
         <div class="stat-value" id="weekCount">0</div>
       </div>
       <div class="stat-card">
-        <div class="stat-title">This Month</div>
+        <div class="stat-title">Open 8-30 Days</div>
         <div class="stat-value" id="monthCount">0</div>
       </div>
       <div class="stat-card">
-        <div class="stat-title">Older</div>
+        <div class="stat-title">Open >30 Days</div>
         <div class="stat-value" id="olderCount">0</div>
       </div>
     </div>
@@ -66,14 +66,15 @@
       <h3>About Tab Age</h3>
       <p>Tabs are categorized by age to help you identify which ones you've been keeping open for too long.</p>
       <ul>
-        <li><span class="tag today">Today</span> - Opened in the last 24 hours</li>
-        <li><span class="tag week">This Week</span> - Opened in the last 7 days</li>
-        <li><span class="tag month">This Month</span> - Opened in the last 30 days</li>
-        <li><span class="tag older">Older</span> - Opened more than 30 days ago</li>
+        <li><span class="tag today">Opened Today</span> - Opened in the last 24 hours</li>
+        <li><span class="tag week">Open 1-7 Days</span> - Opened between 1-7 days ago</li>
+        <li><span class="tag month">Open 8-30 Days</span> - Opened between 8-30 days ago</li>
+        <li><span class="tag older">Open >30 Days</span> - Opened more than 30 days ago</li>
       </ul>
     </div>
   </div>
 
+  <script src="chart.js"></script>
   <script src="utils.js"></script>
   <script src="popup.js"></script>
 </body>

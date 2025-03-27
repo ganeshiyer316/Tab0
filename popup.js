@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  console.log('DOMContentLoaded event fired');
+  console.log('Chart library available:', typeof Chart !== 'undefined');
   // Get references to DOM elements
   const tabCountElement = document.getElementById('tabCount');
   const todayCountElement = document.getElementById('todayCount');
@@ -228,7 +230,7 @@ function initAgeDistributionChart(data) {
   
   // Prepare datasets with labels
   const chartData = {
-    labels: ['Today', 'This Week', 'This Month', 'Older'],
+    labels: ['Opened Today', 'Open 1-7 Days', 'Open 8-30 Days', 'Open >30 Days'],
     datasets: [{
       data: [todayCount, weekCount, monthCount, olderCount],
       backgroundColor: ['#2ecc71', '#3498db', '#f39c12', '#e74c3c'],

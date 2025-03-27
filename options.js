@@ -163,7 +163,7 @@ function initTabAgeChart(tabs) {
   new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['Today', 'This Week', 'This Month', 'Older'],
+      labels: ['Opened Today', 'Open 1-7 Days', 'Open 8-30 Days', 'Open >30 Days'],
       datasets: [{
         data: [todayCount, weekCount, monthCount, olderCount],
         backgroundColor: ['#2ecc71', '#3498db', '#f39c12', '#e74c3c'],

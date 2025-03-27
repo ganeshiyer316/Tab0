@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Tab Age Tracker - Options</title>
   <link rel="stylesheet" href="options.css">
-  <script src="chart.js"></script>
+  <!-- Chart.js will be loaded at the end of the body -->
 </head>
 <body>
   <div class="container">
@@ -68,10 +68,10 @@
         <div class="filter-box">
           <select id="ageFilter">
             <option value="all">All Ages</option>
-            <option value="today">Today</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="older">Older</option>
+            <option value="today">Opened Today</option>
+            <option value="week">Open 1-7 Days</option>
+            <option value="month">Open 8-30 Days</option>
+            <option value="older">Open >30 Days</option>
           </select>
         </div>
         <div class="sort-box">
@@ -199,6 +199,7 @@
     </div>
   </div>
 
+  <script src="chart.js"></script>
   <script src="utils.js"></script>
   <script src="options.js"></script>
 </body>
