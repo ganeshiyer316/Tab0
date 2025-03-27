@@ -12,6 +12,9 @@ app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
+print("Starting server with static_folder=", app.static_folder)
+print("Current working directory:", os.getcwd())
+
 # Database Models
 class TabSnapshot(db.Model):
     id = db.Column(db.Integer, primary_key=True)
