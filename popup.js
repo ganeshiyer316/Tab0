@@ -209,55 +209,127 @@ function initAgeDistributionChart(data) {
   // Create or update the chart
   const ctx = document.getElementById('ageDistributionChart').getContext('2d');
   
+  // Prepare datasets with labels
+  const chartData = {
+    labels: ['Today', 'This Week', 'This Month', 'Older'],
+    datasets: [{
+      data: [todayCount, weekCount, monthCount, olderCount],
+      backgroundColor: ['#2ecc71', '#3498db', '#f39c12', '#e74c3c'],
+      borderWidth: 0
+    }]
+  };
+  
+  // Only show categories that have data
+  const filteredLabels = [];
+  const filteredData = [];
+  const filteredColors = [];
+  
+  chartData.labels.forEach((label, index) => {
+    if (chartData.datasets[0].data[index] > 0) {
+      filteredLabels.push(label);
+      filteredData.push(chartData.datasets[0].data[index]);
+      filteredColors.push(chartData.datasets[0].backgroundColor[index]);
+    }
+  });
+  
   // Check if chart already exists
   if (window.ageDistributionChart) {
-    window.ageDistributionChart.data.datasets[0].data = [todayCount, weekCount, monthCount, olderCount];
+    window.ageDistributionChart.data.labels = filteredLabels;
+    window.ageDistributionChart.data.datasets[0].data = filteredData;
+    window.ageDistributionChart.data.datasets[0].backgroundColor = filteredColors;
     window.ageDistributionChart.update();
   } else {
-    window.ageDistributionChart = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: ['Today', 'This Week', 'This Month', 'Older'],
-        datasets: [{
-          data: [todayCount, weekCount, monthCount, olderCount],
-          backgroundColor: ['#2ecc71', '#3498db', '#f39c12', '#e74c3c'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: {
-              boxWidth: 12,
-              padding: 10
+    // Only create the chart if we have data to show
+    if (todayCount + weekCount + monthCount + olderCount > 0) {
+      window.ageDistributionChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: filteredLabels,
+          datasets: [{
+            data: filteredData,
+            backgroundColor: filteredColors,
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 12,
+                padding: 10
+              }
+            },
+            title: {
+              display: true,
+              text: 'Tab Age Distribution',
+              font: {
+                size: 14
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.raw || 0;
+                  const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                  const percentage = Math.round((value / total) * 100);
+                  return `${label}: ${value} tabs (${percentage}%)`;
+                }
+              }
             }
           },
-          title: {
-            display: true,
-            text: 'Tab Age Distribution',
-            font: {
-              size: 14
-            }
-          }
-        },
-        cutout: '50%'
-      }
-    });
+          cutout: '50%'
+        }
+      });
+    } else {
+      // Display a message if no data
+      ctx.canvas.style.display = 'none';
+      const noDataMsg = document.createElement('div');
+      noDataMsg.textContent = 'No tab age data available yet';
+      noDataMsg.style.textAlign = 'center';
+      noDataMsg.style.padding = '20px';
+      noDataMsg.style.color = '#999';
+      ctx.canvas.parentNode.appendChild(noDataMsg);
+    }
   }
 }
 
 function initTrendChart(data) {
   const { tabHistory = [] } = data;
   
+  // Create or update the chart
+  const ctx = document.getElementById('trendChart').getContext('2d');
+  
+  // If we don't have history data, create some initial data points
+  // so we at least have something to show in the chart
+  let chartData = tabHistory;
+  
+  if (tabHistory.length === 0) {
+    // If no history, create one entry with today's count
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Get the current tab count
+    chrome.tabs.query({}, (tabs) => {
+      chartData = [{ date: today, count: tabs.length }];
+      createOrUpdateTrendChart(chartData, ctx);
+    });
+    
+    return;
+  }
+  
+  createOrUpdateTrendChart(chartData, ctx);
+}
+
+function createOrUpdateTrendChart(chartData, ctx) {
   // Prepare data for the chart
   const labels = [];
   const counts = [];
   
   // Sort by date and get the last 14 days
-  const sortedHistory = [...tabHistory].sort((a, b) => new Date(a.date) - new Date(b.date));
+  const sortedHistory = [...chartData].sort((a, b) => new Date(a.date) - new Date(b.date));
   const recentHistory = sortedHistory.slice(-14);
   
   recentHistory.forEach(entry => {
@@ -269,8 +341,16 @@ function initTrendChart(data) {
     counts.push(entry.count);
   });
   
-  // Create or update the chart
-  const ctx = document.getElementById('trendChart').getContext('2d');
+  // Fill in missing days with the previous count or 0
+  if (labels.length === 1) {
+    // If we only have one data point, add another point for today
+    const today = new Date();
+    const formattedToday = `${today.getMonth() + 1}/${today.getDate()}`;
+    if (labels[0] !== formattedToday) {
+      labels.push(formattedToday);
+      counts.push(counts[0]);
+    }
+  }
   
   // Check if chart already exists
   if (window.trendChart) {
@@ -304,6 +384,16 @@ function initTrendChart(data) {
             text: 'Tab Count Trend',
             font: {
               size: 14
+            }
+          },
+          tooltip: {
+            callbacks: {
+              title: function(tooltipItems) {
+                return tooltipItems[0].label;
+              },
+              label: function(context) {
+                return `Tabs: ${context.raw}`;
+              }
             }
           }
         },
