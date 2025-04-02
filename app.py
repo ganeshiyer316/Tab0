@@ -55,6 +55,11 @@ def serve_file(path):
     """Serve any file from the current directory"""
     return send_from_directory('.', path)
 
+@app.route('/download-extension')
+def download_extension():
+    """Download the latest version of the extension"""
+    return send_from_directory('.', 'tab-age-tracker.zip')
+
 @app.route('/api/import-data', methods=['POST'])
 def import_data():
     """Handle data import from the extension and save to database"""
