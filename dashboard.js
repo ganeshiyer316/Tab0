@@ -408,6 +408,9 @@ function initAgeDistributionChart() {
 }
 
 function updateAgeDistributionChart(chartData) {
+    // Calculate total for percentages
+    const total = chartData.data.reduce((acc, val) => acc + val, 0);
+    
     // Set up chart data
     const data = {
         labels: chartData.labels,
@@ -439,10 +442,33 @@ function updateAgeDistributionChart(chartData) {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.raw || 0;
+                            const percentage = total ? Math.round((value / total) * 100) : 0;
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                },
                 legend: {
                     position: 'bottom',
                     labels: {
-                        padding: 20
+                        padding: 20,
+                        // Add percentage to legend labels
+                        generateLabels: function(chart) {
+                            const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
+                            const data = chart.data.datasets[0].data;
+                            const total = data.reduce((acc, val) => acc + val, 0);
+                            
+                            return labels.map((label, i) => {
+                                const value = data[i];
+                                const percentage = total ? Math.round((value / total) * 100) : 0;
+                                label.text = `${label.text} (${percentage}%)`;
+                                return label;
+                            });
+                        }
                     }
                 }
             },
