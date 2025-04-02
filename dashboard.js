@@ -274,6 +274,23 @@ function updateSummaryStats(distributionData) {
  * Initialize or update the charts
  */
 function initializeCharts() {
+    // Check if Chart is available
+    if (typeof Chart === 'undefined') {
+        console.error('Chart.js library not loaded properly');
+        // Add fallback text for chart containers
+        document.querySelectorAll('.chart-container').forEach(container => {
+            const messageDiv = document.createElement('div');
+            messageDiv.textContent = 'Chart visualization unavailable';
+            messageDiv.style.textAlign = 'center';
+            messageDiv.style.padding = '20px';
+            messageDiv.style.color = '#999';
+            container.appendChild(messageDiv);
+        });
+        return;
+    }
+    
+    console.log('Chart.js loaded successfully, initializing charts');
+    
     initAgeDistributionChart();
     initTabTrendChart();
     initDailyProgressChart();
