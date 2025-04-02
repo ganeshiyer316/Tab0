@@ -507,10 +507,17 @@ function initDailyProgressChart() {
                 return;
             }
             
-            // Set up chart data
+            // Process the data for chart visualization
             const chartData = {
-                labels: data.days || [],
-                counts: data.counts || []
+                // Format dates for chart labels
+                labels: data.map(item => {
+                    const date = new Date(item.date);
+                    return `${date.getMonth()+1}/${date.getDate()}`;
+                }),
+                // Extract min, avg, max values from the data
+                minCounts: data.map(item => item.min),
+                avgCounts: data.map(item => item.avg),
+                maxCounts: data.map(item => item.max)
             };
             
             const ctx = document.getElementById('dailyProgressChart').getContext('2d');
@@ -518,22 +525,44 @@ function initDailyProgressChart() {
             // Create or update the chart
             if (dailyProgressChart) {
                 dailyProgressChart.data.labels = chartData.labels;
-                dailyProgressChart.data.datasets[0].data = chartData.counts;
+                dailyProgressChart.data.datasets[0].data = chartData.maxCounts;
+                dailyProgressChart.data.datasets[1].data = chartData.avgCounts;
+                dailyProgressChart.data.datasets[2].data = chartData.minCounts;
                 dailyProgressChart.update();
             } else {
                 dailyProgressChart = new Chart(ctx, {
                     type: 'line',
                     data: {
                         labels: chartData.labels,
-                        datasets: [{
-                            label: 'Total Tabs',
-                            data: chartData.counts,
-                            borderColor: 'rgba(75, 192, 192, 1)',
-                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-                            borderWidth: 2,
-                            fill: true,
-                            tension: 0.4
-                        }]
+                        datasets: [
+                            {
+                                label: 'Maximum',
+                                data: chartData.maxCounts || [],
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                                borderWidth: 2,
+                                fill: false,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Average',
+                                data: chartData.avgCounts || [],
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                borderWidth: 2,
+                                fill: false,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Minimum',
+                                data: chartData.minCounts || [],
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                                borderWidth: 2,
+                                fill: false,
+                                tension: 0.4
+                            }
+                        ]
                     },
                     options: {
                         responsive: true,

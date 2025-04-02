@@ -204,7 +204,16 @@ h1 {
 }
 
 .tab-info {
+  display: flex;
+  align-items: center;
   flex: 1;
+}
+
+.tab-favicon {
+  width: 16px;
+  height: 16px;
+  margin-right: 10px;
+  object-fit: contain;
 }
 
 .tab-url {

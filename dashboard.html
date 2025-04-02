@@ -105,6 +105,39 @@
             color: white;
             font-weight: bold;
         }
+        .chart-description {
+            color: #666;
+            margin-top: -10px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: #2196F3;
+        }
+        .tooltip-text {
+            visibility: hidden;
+            width: 300px;
+            background-color: #555;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px 12px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -150px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            line-height: 1.5;
+        }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
         .info-bar {
             padding: 10px 15px;
             margin: 20px 0;
@@ -171,6 +204,16 @@
         </div>
         
         <h2>Daily Progress</h2>
+        <p class="chart-description">
+            This chart shows the minimum, average, and maximum number of tabs you've had open each day.
+            <span class="tooltip">ℹ️
+                <span class="tooltip-text">
+                    <strong>Maximum (Red):</strong> The highest number of tabs open during the day<br>
+                    <strong>Average (Blue):</strong> The average number of tabs open throughout the day<br>
+                    <strong>Minimum (Green):</strong> The lowest number of tabs open during the day
+                </span>
+            </span>
+        </p>
         <div class="chart-container">
             <canvas id="dailyProgressChart"></canvas>
         </div>

@@ -185,6 +185,39 @@ function extractDateFromURL(url) {
   if (!url) return null;
   
   try {
+    // Handle Simon Willison specific URL patterns
+    if (url.includes('simonwillison.net')) {
+      // Pattern: simonwillison.net/YYYY/Mon/DD/title
+      const simonUrlPattern = /simonwillison\.net\/(\d{4})\/([A-Za-z]+)\/(\d{1,2})\//i;
+      const simonMatch = url.match(simonUrlPattern);
+      if (simonMatch) {
+        const [_, year, monthName, day] = simonMatch;
+        // Full month names
+        const fullMonths = {
+          'january': 0, 'february': 1, 'march': 2, 'april': 3, 'may': 4, 'june': 5,
+          'july': 6, 'august': 7, 'september': 8, 'october': 9, 'november': 10, 'december': 11
+        };
+        // Abbreviated month names
+        const shortMonths = {
+          'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
+          'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11
+        };
+        
+        // Try both full and abbreviated month names
+        let monthIndex = fullMonths[monthName.toLowerCase()];
+        if (monthIndex === undefined) {
+          monthIndex = shortMonths[monthName.toLowerCase()];
+        }
+        
+        if (monthIndex !== undefined) {
+          const extractedDate = new Date(parseInt(year), monthIndex, parseInt(day));
+          if (!isNaN(extractedDate.getTime())) {
+            return extractedDate;
+          }
+        }
+      }
+    }
+    
     // Pattern: /YYYY/MM/DD/ (e.g., /2024/04/02/)
     const slashPattern = /\/(\d{4})\/(\d{1,2})\/(\d{1,2})\//;
     const slashMatch = url.match(slashPattern);

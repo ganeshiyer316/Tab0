@@ -446,15 +446,34 @@ function populateTabsTable(tabs) {
   document.querySelectorAll('.open-tab').forEach(button => {
     button.addEventListener('click', () => {
       const tabId = parseInt(button.getAttribute('data-id'));
-      chrome.tabs.update(tabId, { active: true }, function(tab) {
+      // First get the window of the tab to focus that window too
+      chrome.tabs.get(tabId, function(tab) {
         if (chrome.runtime.lastError) {
-          console.error('Error opening tab:', chrome.runtime.lastError);
-          showError(`Could not open tab: ${chrome.runtime.lastError.message}`);
-          // The tab might not exist anymore, we should update the UI
+          console.error('Error getting tab:', chrome.runtime.lastError);
+          showError(`Could not find tab: ${chrome.runtime.lastError.message}`);
+          
+          // The tab might not exist anymore, refresh the data
           setTimeout(() => {
-            loadAndInitializeData(); // Refresh the data
+            loadAndInitializeData();
           }, 500);
+          return;
         }
+        
+        // Focus the window containing this tab
+        chrome.windows.update(tab.windowId, { focused: true }, function() {
+          // Then activate the tab
+          chrome.tabs.update(tabId, { active: true }, function(updatedTab) {
+            if (chrome.runtime.lastError) {
+              console.error('Error opening tab:', chrome.runtime.lastError);
+              showError(`Could not open tab: ${chrome.runtime.lastError.message}`);
+              
+              // Refresh the data if there was an error
+              setTimeout(() => {
+                loadAndInitializeData();
+              }, 500);
+            }
+          });
+        });
       });
     });
   });
