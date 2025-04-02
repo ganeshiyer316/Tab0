@@ -49,16 +49,30 @@ async function captureCurrentTabs() {
     // Process current tabs
     const now = new Date().toISOString();
     const processedTabs = tabs.map(tab => {
-      // Try to find the tab in existing data to preserve creation time
+      // Try to find the tab in existing data to preserve creation time and verification status
       const existingTab = tabData.tabs.find(t => t.id === tab.id);
       
-      return {
-        id: tab.id,
-        url: tab.url,
-        title: tab.title,
-        favIconUrl: tab.favIconUrl,
-        createdAt: existingTab ? existingTab.createdAt : now
-      };
+      if (existingTab) {
+        // Preserve existing tab's creation time and verification status
+        return {
+          id: tab.id,
+          url: tab.url,
+          title: tab.title,
+          favIconUrl: tab.favIconUrl,
+          createdAt: existingTab.createdAt,
+          isVerified: existingTab.isVerified !== undefined ? existingTab.isVerified : false
+        };
+      } else {
+        // New tab we haven't seen before (rare case during normal operation, might occur if background page reloaded)
+        return {
+          id: tab.id,
+          url: tab.url,
+          title: tab.title,
+          favIconUrl: tab.favIconUrl,
+          createdAt: now,
+          isVerified: true // New tabs created after extension installation are always verified
+        };
+      }
     });
     
     // Update tab data
@@ -109,14 +123,15 @@ chrome.tabs.onCreated.addListener(async (tab) => {
     let tabData = data.tabData || { tabs: [], lastUpdated: null };
     let peakTabCount = data.peakTabCount || 0;
     
-    // Add the new tab
+    // Add the new tab with verified creation date
     const now = new Date().toISOString();
     tabData.tabs.push({
       id: tab.id,
       url: tab.url || '',
       title: tab.title || 'New Tab',
       favIconUrl: tab.favIconUrl || '',
-      createdAt: now
+      createdAt: now,
+      isVerified: true // Mark that this is a verified creation date
     });
     
     tabData.count = tabData.tabs.length;
@@ -174,21 +189,25 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     const tabIndex = tabData.tabs.findIndex(t => t.id === tabId);
     
     if (tabIndex >= 0) {
-      // Update the tab
+      // Update the tab while preserving creation date and verification status
       tabData.tabs[tabIndex] = {
         ...tabData.tabs[tabIndex],
         url: tab.url || tabData.tabs[tabIndex].url,
         title: tab.title || tabData.tabs[tabIndex].title,
         favIconUrl: tab.favIconUrl || tabData.tabs[tabIndex].favIconUrl
+        // isVerified and createdAt are preserved from the existing tab object
       };
     } else {
-      // If the tab doesn't exist (shouldn't happen), add it
+      // If the tab doesn't exist (shouldn't happen), add it as a new tab with verified date
+      // This is a fallback, should rarely occur except for programmatically created tabs
+      const now = new Date().toISOString();
       tabData.tabs.push({
         id: tab.id,
         url: tab.url || '',
         title: tab.title || 'New Tab',
         favIconUrl: tab.favIconUrl || '',
-        createdAt: new Date().toISOString()
+        createdAt: now,
+        isVerified: true // Mark as verified since it's a new tab we're tracking from creation
       });
     }
     
@@ -256,8 +275,20 @@ async function updateExtensionBadge() {
     }
     
     if (badgeType === 'age' && tabs.length > 0) {
-      // Find oldest tab
-      const sortedTabs = [...tabs].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      // Get only verified tabs with actual creation dates
+      const verifiedTabs = tabs.filter(tab => 
+        tab.createdAt && (!tab.hasOwnProperty('isVerified') || tab.isVerified)
+      );
+      
+      if (verifiedTabs.length === 0) {
+        // If no verified tabs, show a placeholder badge
+        chrome.action.setBadgeText({ text: '?' });
+        chrome.action.setBadgeBackgroundColor({ color: '#95a5a6' }); // Gray for unknown
+        return;
+      }
+      
+      // Find oldest verified tab
+      const sortedTabs = [...verifiedTabs].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       const oldestTab = sortedTabs[0];
       const createdAt = new Date(oldestTab.createdAt);
       const now = new Date();
@@ -291,8 +322,13 @@ async function checkAndNotifyOldTabs() {
     const threshold = settings.oldTabThreshold || 30; // Default 30 days
     const now = new Date();
     
-    // Find tabs older than the threshold
+    // Find verified tabs older than the threshold
     const oldTabs = tabs.filter(tab => {
+      // Skip tabs with unknown creation dates or unverified dates
+      if (!tab.createdAt || (tab.isVerified !== undefined && tab.isVerified === false)) {
+        return false;
+      }
+      
       const createdAt = new Date(tab.createdAt);
       const ageInDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
       return ageInDays >= threshold;
@@ -347,90 +383,18 @@ async function captureCurrentTabsWithDistribution() {
     let tabHistory = data.tabHistory || [];
     let peakTabCount = data.peakTabCount || 0;
     
-    // Process current tabs using more intelligent creation time assignment
+    // Process current tabs - all pre-existing tabs will have unknown creation time for 100% accuracy
     const now = new Date();
     const processedTabs = tabs.map((tab) => {
-      // For initial tabs, we'll use heuristics to assign more realistic creation dates
-      let createdAt;
-      
-      // First try to extract dates from URL or title for specific patterns
-      // Check for date patterns in URL (like /2024/01/ or /2024-01-01/ or month names)
-      const datePatterns = [
-        { regex: /\/(20\d{2})[\/\-_](\d{1,2})[\/\-_](\d{1,2})\//, groups: [1, 2, 3] }, // /2024/01/01/
-        { regex: /\/(20\d{2})[\-\/]?(\d{1,2})[\-\/]?(\d{1,2})/, groups: [1, 2, 3] },   // /2024-01-01
-        { regex: /\/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[\/\-_](20\d{2})/, // /jan-2024/
-          process: (match) => {
-            const months = {jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, 
-                           jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11};
-            return new Date(parseInt(match[2]), months[match[1].toLowerCase()], 15);
-          }
-        }
-      ];
-      
-      // Try each pattern
-      let dateFound = false;
-      for (const pattern of datePatterns) {
-        const urlMatch = tab.url.toLowerCase().match(pattern.regex);
-        if (urlMatch) {
-          if (pattern.process) {
-            // Custom processing function
-            createdAt = pattern.process(urlMatch);
-          } else {
-            // Standard group extraction
-            const year = parseInt(urlMatch[pattern.groups[0]]);
-            const month = parseInt(urlMatch[pattern.groups[1]]) - 1; // JS months are 0-indexed
-            const day = parseInt(urlMatch[pattern.groups[2]]);
-            createdAt = new Date(year, month, day);
-          }
-          
-          // Verify the date is valid and in the past
-          if (!isNaN(createdAt) && createdAt < now) {
-            dateFound = true;
-            break;
-          }
-        }
-      }
-      
-      // Check for year/month keywords in title if no date found in URL
-      if (!dateFound) {
-        // Look for specific cases like "Things we learned in 2024"
-        const yearTitleMatch = tab.title.match(/(20\d{2})/);
-        if (yearTitleMatch && tab.title.toLowerCase().includes('learn')) {
-          const year = parseInt(yearTitleMatch[1]);
-          // Assume it's from December of that year
-          createdAt = new Date(year, 11, 15); // December 15th of that year
-          dateFound = true;
-        }
-      }
-      
-      // If we still don't have a date, use tab ID as a proxy for age
-      if (!dateFound) {
-        // Use tab ID - generally, lower IDs are older tabs
-        // Find the lowest and highest tab IDs to create a relative scale
-        const tabIds = tabs.map(t => t.id);
-        const minTabId = Math.min(...tabIds);
-        const maxTabId = Math.max(...tabIds);
-        const range = maxTabId - minTabId;
-        
-        if (range > 0) {
-          // Scale the tab's position in the ID range to days (newer tabs = higher IDs)
-          const relativeAge = (tab.id - minTabId) / range;
-          const maxAgeDays = 90; // Maximum age in days (3 months)
-          // Older tabs (lower IDs) get older dates
-          const estimatedAgeDays = Math.floor((1 - relativeAge) * maxAgeDays);
-          createdAt = new Date(now.getTime() - estimatedAgeDays * 24 * 60 * 60 * 1000);
-        } else {
-          // Fallback if all tab IDs are the same (unlikely)
-          createdAt = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000)); // Default to 1 week old
-        }
-      }
-      
+      // For pre-existing tabs at install time, we mark age as unknown to ensure data integrity
+      // Only tabs created after extension installation will have verified creation dates
       return {
         id: tab.id,
         url: tab.url,
         title: tab.title,
         favIconUrl: tab.favIconUrl,
-        createdAt: createdAt.toISOString()
+        createdAt: null, // null indicates unknown creation date
+        isVerified: false // Flag to indicate this is not a verified date
       };
     });
     

@@ -37,10 +37,22 @@ function formatTime(date) {
 
 /**
  * Calculates the age of a tab based on its creation date
- * @param {string} createdAt - ISO date string of tab creation
+ * @param {string} createdAt - ISO date string of tab creation, or null if unknown
  * @returns {Object} Object containing age information
  */
 function calculateTabAge(createdAt) {
+    // If creation date is unknown, return unknown age
+    if (!createdAt) {
+        return {
+            days: -1,
+            weeks: -1,
+            months: -1,
+            category: 'unknown',
+            label: 'Unknown Age',
+            exact: 'Unknown',
+            ageInDays: -1
+        };
+    }
   const created = new Date(createdAt);
   const now = new Date();
   
@@ -86,7 +98,7 @@ function calculateTabAge(createdAt) {
 
 /**
  * Generates a color based on the age of a tab
- * @param {string} createdAt - ISO date string of tab creation
+ * @param {string} createdAt - ISO date string of tab creation, or null if unknown
  * @returns {string} CSS color value
  */
 function getAgeColor(createdAt) {
@@ -97,10 +109,11 @@ function getAgeColor(createdAt) {
     yesterday: '#3498db',  // Blue
     week: '#f39c12',       // Orange
     month: '#e67e22',      // Dark Orange
-    older: '#e74c3c'       // Red
+    older: '#e74c3c',      // Red
+    unknown: '#95a5a6'     // Gray
   };
   
-  return colorMap[category] || colorMap.older;
+  return colorMap[category] || colorMap.unknown;
 }
 
 /**
@@ -151,7 +164,7 @@ function getFaviconFallback(url) {
 function exportToCsv(tabs) {
   if (!tabs || !tabs.length) return '';
   
-  const headers = ['Title', 'URL', 'Created At', 'Age (Days)'];
+  const headers = ['Title', 'URL', 'Created At', 'Age (Days)', 'Age Status'];
   const rows = [headers];
   
   tabs.forEach(tab => {
@@ -159,8 +172,9 @@ function exportToCsv(tabs) {
     rows.push([
       `"${(tab.title || '').replace(/"/g, '""')}"`,
       `"${(tab.url || '').replace(/"/g, '""')}"`,
-      `"${formatDate(tab.createdAt)}"`,
-      `"${age.days}"`
+      `"${tab.createdAt ? formatDate(tab.createdAt) : 'Unknown'}"`,
+      `"${age.ageInDays >= 0 ? age.ageInDays : 'Unknown'}"`,
+      `"${age.ageInDays >= 0 ? 'Verified' : 'Unverified'}"`
     ]);
   });
   

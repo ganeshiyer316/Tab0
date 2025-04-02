@@ -164,8 +164,21 @@ function updateTabCounts(data) {
   let weekCount = 0;
   let monthCount = 0;
   let olderCount = 0;
+  let unknownCount = 0;
   
   tabs.forEach(tab => {
+    // Skip tabs with unknown creation dates
+    if (!tab.createdAt) {
+      unknownCount++;
+      return;
+    }
+    
+    // Skip unverified tabs
+    if (tab.hasOwnProperty('isVerified') && tab.isVerified === false) {
+      unknownCount++;
+      return;
+    }
+    
     const createdAt = new Date(tab.createdAt);
     const age = now - createdAt;
     
@@ -186,6 +199,12 @@ function updateTabCounts(data) {
   document.getElementById('weekCount').textContent = weekCount;
   document.getElementById('monthCount').textContent = monthCount;
   document.getElementById('olderCount').textContent = olderCount;
+  
+  // Update unknown count - always update this since the element should always exist now
+  const unknownElement = document.getElementById('unknownCount');
+  if (unknownElement) {
+    unknownElement.textContent = unknownCount;
+  }
 }
 
 function updateProgressBar(data) {
@@ -215,8 +234,21 @@ function initAgeDistributionChart(data) {
   let weekCount = 0; 
   let monthCount = 0;
   let olderCount = 0;
+  let unknownCount = 0;
   
   tabs.forEach(tab => {
+    // Skip tabs with unknown creation dates or unverified dates
+    if (!tab.createdAt) {
+      unknownCount++;
+      return;
+    }
+    
+    // Skip unverified tabs if the isVerified flag is explicitly set to false
+    if (tab.hasOwnProperty('isVerified') && tab.isVerified === false) {
+      unknownCount++;
+      return;
+    }
+    
     const createdAt = new Date(tab.createdAt);
     const age = now - createdAt;
     
@@ -236,10 +268,10 @@ function initAgeDistributionChart(data) {
   
   // Prepare datasets with labels
   const chartData = {
-    labels: ['Opened Today', 'Open 1-7 Days', 'Open 8-30 Days', 'Open >30 Days'],
+    labels: ['Opened Today', 'Open 1-7 Days', 'Open 8-30 Days', 'Open >30 Days', 'Unknown Age'],
     datasets: [{
-      data: [todayCount, weekCount, monthCount, olderCount],
-      backgroundColor: ['#2ecc71', '#3498db', '#f39c12', '#e74c3c'],
+      data: [todayCount, weekCount, monthCount, olderCount, unknownCount],
+      backgroundColor: ['#2ecc71', '#3498db', '#f39c12', '#e74c3c', '#95a5a6'],
       borderWidth: 0
     }]
   };
@@ -269,7 +301,7 @@ function initAgeDistributionChart(data) {
     window.ageDistributionChart.update();
   } else {
     // Only create the chart if we have data to show
-    if (todayCount + weekCount + monthCount + olderCount > 0) {
+    if (todayCount + weekCount + monthCount + olderCount + unknownCount > 0) {
       window.ageDistributionChart = new Chart(ctx, {
         type: 'doughnut',
         data: {

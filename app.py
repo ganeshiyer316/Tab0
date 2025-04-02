@@ -25,6 +25,7 @@ class TabSnapshot(db.Model):
     week_count = db.Column(db.Integer)
     month_count = db.Column(db.Integer)
     older_count = db.Column(db.Integer)
+    unknown_count = db.Column(db.Integer, default=0)
     peak_count = db.Column(db.Integer)
     new_tabs = db.Column(db.Integer, default=0)
     closed_tabs = db.Column(db.Integer, default=0)
@@ -113,6 +114,7 @@ def import_data():
             week_count=age_categories.get('week', 0),
             month_count=age_categories.get('month', 0),
             older_count=age_categories.get('older', 0),
+            unknown_count=age_categories.get('unknown', 0),
             peak_count=peak_count,
             new_tabs=new_tabs,
             closed_tabs=closed_tabs
@@ -123,17 +125,30 @@ def import_data():
         
         # Add individual tab details
         for tab in tabs:
-            created_at = datetime.fromisoformat(tab.get('createdAt').replace('Z', '+00:00'))
-            age_days = (datetime.utcnow() - created_at).days
-            
-            tab_detail = TabDetail(
-                snapshot_id=snapshot.id,
-                browser_tab_id=tab.get('id'),
-                title=tab.get('title', '')[:255],  # Truncate to fit column
-                url=tab.get('url', ''),
-                created_at=created_at,
-                age_days=age_days
-            )
+            # Skip tabs with unknown/unverified creation dates
+            if not tab.get('createdAt') or (tab.get('isVerified') is False):
+                # Still store the tab but with null creation date and age
+                tab_detail = TabDetail(
+                    snapshot_id=snapshot.id,
+                    browser_tab_id=tab.get('id'),
+                    title=tab.get('title', '')[:255],  # Truncate to fit column
+                    url=tab.get('url', ''),
+                    created_at=None,
+                    age_days=None
+                )
+            else:
+                # Normal case with verified creation date
+                created_at = datetime.fromisoformat(tab.get('createdAt').replace('Z', '+00:00'))
+                age_days = (datetime.utcnow() - created_at).days
+                
+                tab_detail = TabDetail(
+                    snapshot_id=snapshot.id,
+                    browser_tab_id=tab.get('id'),
+                    title=tab.get('title', '')[:255],  # Truncate to fit column
+                    url=tab.get('url', ''),
+                    created_at=created_at,
+                    age_days=age_days
+                )
             
             db.session.add(tab_detail)
         
@@ -273,7 +288,8 @@ def get_distribution_data():
                 {'category': 'Today', 'count': latest.today_count},
                 {'category': 'This Week', 'count': latest.week_count},
                 {'category': 'This Month', 'count': latest.month_count},
-                {'category': 'Older', 'count': latest.older_count}
+                {'category': 'Older', 'count': latest.older_count},
+                {'category': 'Unknown Age', 'count': latest.unknown_count}
             ],
             'peak': latest.peak_count
         }
@@ -305,7 +321,7 @@ def suggest_tab_groups():
                     'id': tab.browser_tab_id,
                     'title': tab.title,
                     'url': tab.url,
-                    'age_days': tab.age_days
+                    'age_days': tab.age_days if tab.age_days is not None else -1  # Use -1 to indicate unknown age
                 })
         
         # Filter groups with more than 2 tabs
@@ -314,7 +330,7 @@ def suggest_tab_groups():
                 'name': domain,
                 'count': len(tabs),
                 'tabs': tabs,
-                'oldest_age': max(tab['age_days'] for tab in tabs),
+                'oldest_age': max((tab['age_days'] for tab in tabs if tab['age_days'] >= 0), default=0),
                 'reason': f'{len(tabs)} tabs from the same domain'
             }
             for domain, tabs in domain_groups.items() if len(tabs) >= 3
@@ -331,9 +347,14 @@ def suggest_tab_groups():
 def categorize_tabs_by_age(tabs):
     """Categorize tabs by age"""
     now = datetime.utcnow()
-    categories = {'today': 0, 'week': 0, 'month': 0, 'older': 0}
+    categories = {'today': 0, 'week': 0, 'month': 0, 'older': 0, 'unknown': 0}
     
     for tab in tabs:
+        # Check if this tab has a createdAt value and is verified
+        if not tab.get('createdAt') or (tab.get('isVerified') is False):
+            categories['unknown'] += 1
+            continue
+            
         created_at = datetime.fromisoformat(tab.get('createdAt').replace('Z', '+00:00'))
         age_days = (now - created_at).days
         

@@ -336,7 +336,8 @@ function initAgeDistributionChart() {
                     'today': 0,
                     'week': 0,
                     'month': 0,
-                    'older': 0
+                    'older': 0,
+                    'unknown': 0
                 };
                 
                 tabData.forEach(tab => {
@@ -357,15 +358,13 @@ function initAgeDistributionChart() {
                         'Opened Today',
                         'Open 1-7 Days',
                         'Open 8-30 Days',
-                        'Open >30 Days',
-                        'Unknown Age'
+                        'Open >30 Days'
                     ],
                     data: [
                         categories.today,
                         categories.week,
                         categories.month,
-                        categories.older,
-                        categories.unknown || 0
+                        categories.older
                     ]
                 };
             }
@@ -396,8 +395,12 @@ function initAgeDistributionChart() {
                     'today': 0,
                     'week': 0,
                     'month': 0,
-                    'older': 0
+                    'older': 0,
+                    'unknown': 0
                 };
+                    if (!tab.createdAt) {
+                        categories.unknown++;
+                    } else {
                 
                 tabData.forEach(tab => {
                     const days = getDaysSince(tab.createdAt);
@@ -405,27 +408,28 @@ function initAgeDistributionChart() {
                         categories.today++;
                     } else if (days < 8) {
                         categories.week++;
+                    }
                     } else if (days < 31) {
                         categories.month++;
                     } else {
+                        'Unknown Age'
                         categories.older++;
                     }
                 });
                 
                 const chartData = {
+                        categories.unknown
                     labels: [
                         'Opened Today',
                         'Open 1-7 Days',
                         'Open 8-30 Days',
-                        'Open >30 Days',
-                        'Unknown Age'
+                        'Open >30 Days'
                     ],
                     data: [
                         categories.today,
                         categories.week,
                         categories.month,
-                        categories.older,
-                        categories.unknown || 0
+                        categories.older
                     ]
                 };
                 
@@ -845,36 +849,28 @@ function populateTabsTable() {
         const row = document.createElement('tr');
         
         // Determine the age category
+        const days = getDaysSince(tab.createdAt);
         let category, categoryClass;
         
-        if (!tab.createdAt) {
-            category = 'Unknown Age';
-            categoryClass = 'category-unknown';
+        if (days < 1) {
+            category = 'Opened Today';
+            categoryClass = 'category-today';
+        } else if (days < 8) {
+            category = 'Open 1-7 Days';
+            categoryClass = 'category-week';
+        } else if (days < 31) {
+            category = 'Open 8-30 Days';
+            categoryClass = 'category-month';
         } else {
-            const days = getDaysSince(tab.createdAt);
-            if (days < 1) {
-                category = 'Opened Today';
-                categoryClass = 'category-today';
-            } else if (days < 8) {
-                category = 'Open 1-7 Days';
-                categoryClass = 'category-week';
-            } else if (days < 31) {
-                category = 'Open 8-30 Days';
-                categoryClass = 'category-month';
-            } else {
-                category = 'Open >30 Days';
-                categoryClass = 'category-older';
-            }
+            category = 'Open >30 Days';
+            categoryClass = 'category-older';
         }
-        
-        // Format the age display
-        let ageDisplay = !tab.createdAt ? 'Unknown' : formatAge(getDaysSince(tab.createdAt));
         
         // Create the row content
         row.innerHTML = `
             <td title="${sanitize(tab.title)}">${truncateString(sanitize(tab.title), 50)}</td>
             <td title="${sanitize(tab.url)}">${truncateString(sanitize(tab.url), 50)}</td>
-            <td>${ageDisplay}</td>
+            <td>${formatAge(days)}</td>
             <td><span class="category-pill ${categoryClass}">${category}</span></td>
         `;
         
@@ -905,8 +901,7 @@ function filterTabs() {
             (categoryFilter === 'today' && categoryText.includes('opened today')) ||
             (categoryFilter === 'week' && categoryText.includes('1-7 days')) ||
             (categoryFilter === 'month' && categoryText.includes('8-30 days')) ||
-            (categoryFilter === 'older' && categoryText.includes('>30 days')) ||
-            (categoryFilter === 'unknown' && categoryText.includes('unknown age'));
+            (categoryFilter === 'older' && categoryText.includes('>30 days'));
         
         rows[i].style.display = matchesSearch && matchesCategory ? '' : 'none';
     }

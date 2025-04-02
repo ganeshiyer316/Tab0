@@ -207,3 +207,14 @@ h3 {
 .tag.older {
   background-color: #e74c3c;
 }
+
+.tag.unknown {
+  background-color: #95a5a6;
+}
+
+.info-note {
+  font-size: 12px;
+  color: #666;
+  margin-top: 10px;
+  font-style: italic;
+}
