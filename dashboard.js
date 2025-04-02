@@ -1,69 +1,59 @@
 /**
- * Tab Age Tracker Web Dashboard
+ * Dashboard JavaScript for Tab Age Tracker
  */
 
 // Global variables
-let tabData = null;
-let tabHistory = null;
-let dailyProgressData = null;
-let tabChangesData = null;
-let ageDistributionChart = null;
+let tabData = [];
+let trendsData = [];
+let distributionChart = null;
 let tabTrendChart = null;
 let dailyProgressChart = null;
 let tabChangesChart = null;
 
-// Initialize the dashboard
-document.addEventListener('DOMContentLoaded', () => {
-    // Set up event listeners
-    document.getElementById('importButton').addEventListener('click', importData);
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize when the page loads
+    updateDashboard();
+    initializeCharts();
+    
+    // Add event listeners
+    document.getElementById('importBtn').addEventListener('click', importData);
     document.getElementById('searchInput').addEventListener('input', filterTabs);
     document.getElementById('categoryFilter').addEventListener('change', filterTabs);
-
-    // Check for data in URL parameters (for direct links from the extension)
-    const urlParams = new URLSearchParams(window.location.search);
-    const dataParam = urlParams.get('data');
-    
-    if (dataParam) {
-        try {
-            // Decode and parse the data
-            const decodedData = decodeURIComponent(dataParam);
-            const parsedData = JSON.parse(decodedData);
-            
-            // Process the imported data
-            processImportedData(parsedData);
-        } catch (error) {
-            showError('Failed to load data from URL: ' + error.message);
-        }
-    }
 });
 
 /**
  * Import tab data from a JSON file
  */
 function importData() {
-    const fileInput = document.getElementById('importFile');
-    const file = fileInput.files[0];
+    const fileInput = document.createElement('input');
+    fileInput.type = 'file';
+    fileInput.accept = '.json';
     
-    if (!file) {
-        showError('Please select a file to import');
-        return;
-    }
+    fileInput.addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const content = e.target.result;
+                // Check if the content is Base64 encoded
+                if (content.startsWith('data:')) {
+                    const base64Content = content.split(',')[1];
+                    const decodedContent = atob(base64Content);
+                    processImportedData(JSON.parse(decodedContent));
+                } else {
+                    processImportedData(JSON.parse(content));
+                }
+            } catch (error) {
+                showError('Error processing the file: ' + error.message);
+            }
+        };
+        reader.readAsText(file);
+    });
     
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        try {
-            const data = JSON.parse(event.target.result);
-            processImportedData(data);
-        } catch (error) {
-            showError('Failed to parse import file: ' + error.message);
-        }
-    };
-    
-    reader.onerror = () => {
-        showError('Error reading the file');
-    };
-    
-    reader.readAsText(file);
+    fileInput.click();
 }
 
 /**
@@ -71,21 +61,46 @@ function importData() {
  * @param {Object} data - The imported data object
  */
 function processImportedData(data) {
-    // Validate the imported data
-    if (!data.tabs || !data.history || !Array.isArray(data.tabs) || !Array.isArray(data.history)) {
-        showError('Invalid import data format');
-        return;
+    // Check if this is a data export from the extension
+    if (data.tabs && Array.isArray(data.tabs)) {
+        tabData = data.tabs;
+        
+        // If there's export metadata, use it for additional information
+        if (data.metadata) {
+            trendsData = data.metadata.history || [];
+        }
+        
+        // Send the data to the server for storage
+        fetch('/api/import', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        })
+        .then(response => response.json())
+        .then(result => {
+            if (result.success) {
+                showMessage('Data imported successfully!');
+                updateDashboard();
+                initializeCharts();
+                populateTabsTable();
+            } else {
+                showError('Error importing data: ' + result.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error sending data to server:', error);
+            showError('Error importing data: ' + error.message);
+            
+            // Still update the UI with the imported data
+            updateDashboard();
+            initializeCharts();
+            populateTabsTable();
+        });
+    } else {
+        showError('Invalid data format. Expected tabs array.');
     }
-    
-    // Store the imported data
-    tabData = data.tabs;
-    tabHistory = data.history;
-    
-    // Update the dashboard with the imported data
-    updateDashboard();
-    
-    // Show success message
-    showMessage('Data imported successfully');
 }
 
 /**
@@ -101,193 +116,158 @@ function updateDashboard() {
                 return;
             }
             
-            // Update tabData if it doesn't exist
-            if (!tabData) {
-                // We don't have actual tab data from the server, create a simple placeholder
-                // This will be replaced when real data is imported from the extension
-                tabData = [];
+            let chartData;
+            
+            // Process categories data for chart
+            if (data.categories) {
+                const categories = data.categories;
+                
+                chartData = {
+                    labels: [
+                        'Opened Today',
+                        'Open 1-7 Days',
+                        'Open 8-30 Days',
+                        'Open >30 Days',
+                        'Unknown Age'
+                    ],
+                    data: [
+                        categories.today,
+                        categories.week,
+                        categories.month,
+                        categories.older,
+                        categories.unknown || 0
+                    ]
+                };
+            }
+            // If we have no data, use empty values
+            else {
+                chartData = {
+                    labels: [
+                        'Opened Today',
+                        'Open 1-7 Days',
+                        'Open 8-30 Days',
+                        'Open >30 Days',
+                        'Unknown Age'
+                    ],
+                    data: [0, 0, 0, 0, 0]
+                };
             }
             
-            // Update summary statistics with distribution data
+            // Create and update the chart
+            updateAgeDistributionChart(chartData);
+            
+            // Update summary statistics
             updateSummaryStats(data);
-            
-            // Initialize age distribution chart
-            initAgeDistributionChart();
         })
         .catch(error => {
-            showError("Error fetching distribution data: " + error);
-        });
-    
-    // Fetch trend data from server
-    fetch('/api/stats/trend')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                showError("Error fetching trend data: " + data.error);
-                return;
+            console.error("Error fetching distribution data:", error);
+            
+            // Fallback to local data if available
+            if (tabData && tabData.length > 0) {
+                // Group tabs by age category
+                const categories = {
+                    'today': 0,
+                    'week': 0,
+                    'month': 0,
+                    'older': 0,
+                    'unknown': 0
+                };
+                
+                // Process tabs to categorize by age
+                tabData.forEach(tab => {
+                    if (!tab.createdAt) {
+                        // Try to extract date from URL
+                        const extractedDate = extractDateFromURL(tab.url);
+                        if (extractedDate) {
+                            const days = getDaysSince(extractedDate.toISOString());
+                            if (days < 1) {
+                                categories.today++;
+                            } else if (days < 8) {
+                                categories.week++;
+                            } else if (days < 31) {
+                                categories.month++;
+                            } else {
+                                categories.older++;
+                            }
+                        } else {
+                            categories.unknown++;
+                        }
+                    } else {
+                        const days = getDaysSince(tab.createdAt);
+                        if (days < 1) {
+                            categories.today++;
+                        } else if (days < 8) {
+                            categories.week++;
+                        } else if (days < 31) {
+                            categories.month++;
+                        } else {
+                            categories.older++;
+                        }
+                    }
+                });
+                
+                const chartData = {
+                    labels: [
+                        'Opened Today',
+                        'Open 1-7 Days',
+                        'Open 8-30 Days',
+                        'Open >30 Days',
+                        'Unknown Age'
+                    ],
+                    data: [
+                        categories.today,
+                        categories.week,
+                        categories.month,
+                        categories.older,
+                        categories.unknown
+                    ]
+                };
+                
+                updateAgeDistributionChart(chartData);
+                
+                // Update summary stats with local data
+                updateSummaryStats({
+                    categories: categories,
+                    total: tabData.length
+                });
             }
-            
-            // Update trend data
-            tabHistory = data.map(entry => ({
-                date: entry.date,
-                count: entry.avg
-            }));
-            
-            // Initialize trend chart
-            initTabTrendChart();
-        })
-        .catch(error => {
-            showError("Error fetching trend data: " + error);
         });
-    
-    // Fetch daily progress data from server
-    fetch('/api/stats/daily-progress')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                showError("Error fetching daily progress data: " + data.error);
-                return;
-            }
-            
-            // Update daily progress data
-            dailyProgressData = data;
-            
-            // Initialize daily progress chart
-            initDailyProgressChart();
-        })
-        .catch(error => {
-            showError("Error fetching daily progress data: " + error);
-        });
-        
-    // Fetch tab changes data from server
-    fetch('/api/stats/tab-changes')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                showError("Error fetching tab changes data: " + data.error);
-                return;
-            }
-            
-            // Update tab changes data
-            tabChangesData = data;
-            
-            // Initialize tab changes chart
-            initTabChangesChart();
-        })
-        .catch(error => {
-            showError("Error fetching tab changes data: " + error);
-        });
-        
-    // Fetch tab group suggestions
-    fetch('/api/suggest/groups')
-        .then(response => response.json())
-        .then(data => {
-            if (data.error) {
-                showError("Error fetching group suggestions: " + data.error);
-                return;
-            }
-            
-            // Update suggested groups container
-            const container = document.getElementById('suggested-groups-container');
-            
-            if (data.length === 0) {
-                container.innerHTML = '<p>No tab groups suggestions available. Please sync your data from the extension.</p>';
-                return;
-            }
-            
-            container.innerHTML = '';
-            
-            // Create a card for each suggestion
-            data.forEach(group => {
-                const card = document.createElement('div');
-                card.className = 'group-suggestion';
-                card.innerHTML = `
-                    <h3>${sanitize(group.name)} (${group.count} tabs)</h3>
-                    <p>${sanitize(group.reason)}</p>
-                    <p>Oldest tab: ${group.oldest_age} days</p>
-                    <details>
-                        <summary>View tabs</summary>
-                        <ul class="tab-list">
-                            ${group.tabs.map(tab => `
-                                <li>
-                                    <a href="${sanitize(tab.url)}" title="${sanitize(tab.title)}" target="_blank">
-                                        ${truncateString(sanitize(tab.title), 50)}
-                                    </a>
-                                </li>
-                            `).join('')}
-                        </ul>
-                    </details>
-                `;
-                container.appendChild(card);
-            });
-        })
-        .catch(error => {
-            showError("Error fetching group suggestions: " + error);
-        });
-        
-    // If we have tabData with individual tabs, populate the table
-    if (tabData && tabData.length > 0) {
-        populateTabsTable();
-    }
 }
 
 /**
  * Update the summary statistics section
  */
 function updateSummaryStats(distributionData) {
-    let totalTabs = 0;
-    let oldestTabAge = 0;
-    let totalAge = 0;
-    let peakTabCount = 0;
+    const totalCount = document.getElementById('totalTabCount');
+    const todayCount = document.getElementById('todayTabCount');
+    const weekCount = document.getElementById('weekTabCount');
+    const monthCount = document.getElementById('monthTabCount');
+    const olderCount = document.getElementById('olderTabCount');
+    const unknownCount = document.getElementById('unknownTabCount');
     
-    // If we have distribution data from the server
-    if (distributionData) {
-        // Get tab count and peak from distribution data
-        totalTabs = distributionData.count || 0;
-        peakTabCount = distributionData.peak || 0;
-        
-        // Calculate estimated average age from distribution
-        if (totalTabs > 0 && distributionData.distribution) {
-            const todayCount = distributionData.distribution.find(d => d.category === 'Today')?.count || 0;
-            const weekCount = distributionData.distribution.find(d => d.category === 'This Week')?.count || 0;
-            const monthCount = distributionData.distribution.find(d => d.category === 'This Month')?.count || 0;
-            const olderCount = distributionData.distribution.find(d => d.category === 'Older')?.count || 0;
-            
-            // Rough estimates: today=0.5, week=3.5, month=15, older=45
-            totalAge = (0.5 * todayCount + 3.5 * weekCount + 15 * monthCount + 45 * olderCount);
-            oldestTabAge = olderCount > 0 ? 45 : monthCount > 0 ? 15 : weekCount > 0 ? 3.5 : 0.5;
-        }
+    const categories = distributionData.categories || {};
+    
+    totalCount.textContent = distributionData.total || tabData.length || 0;
+    todayCount.textContent = categories.today || 0;
+    weekCount.textContent = categories.week || 0;
+    monthCount.textContent = categories.month || 0;
+    olderCount.textContent = categories.older || 0;
+    unknownCount.textContent = categories.unknown || 0;
+    
+    // Calculate and display percentages if we have tabs
+    const total = distributionData.total || tabData.length || 0;
+    if (total > 0) {
+        document.getElementById('todayPercent').textContent = 
+            `(${Math.round((categories.today || 0) / total * 100)}%)`;
+        document.getElementById('weekPercent').textContent = 
+            `(${Math.round((categories.week || 0) / total * 100)}%)`;
+        document.getElementById('monthPercent').textContent = 
+            `(${Math.round((categories.month || 0) / total * 100)}%)`;
+        document.getElementById('olderPercent').textContent = 
+            `(${Math.round((categories.older || 0) / total * 100)}%)`;
+        document.getElementById('unknownPercent').textContent = 
+            `(${Math.round((categories.unknown || 0) / total * 100)}%)`;
     }
-    // If we have detailed tab data (from extension)
-    else if (tabData && tabData.length > 0) {
-        totalTabs = tabData.length;
-        
-        // Calculate statistics from tab data
-        tabData.forEach(tab => {
-            const age = getDaysSince(tab.createdAt);
-            totalAge += age;
-            if (age > oldestTabAge) {
-                oldestTabAge = age;
-            }
-        });
-        
-        // Get peak tab count from history
-        if (tabHistory && tabHistory.length > 0) {
-            peakTabCount = Math.max(...tabHistory.map(entry => entry.count));
-        }
-    }
-    
-    // Update the UI
-    document.getElementById('totalTabs').textContent = totalTabs;
-    document.getElementById('oldestTab').textContent = formatAge(oldestTabAge);
-    document.getElementById('averageAge').textContent = totalTabs > 0 ? formatAge(totalAge / totalTabs) : '-';
-    document.getElementById('peakTabCount').textContent = peakTabCount;
-    
-    // Update progress bar
-    const progressPercentage = peakTabCount > 0 ? Math.max(0, 100 - (totalTabs / peakTabCount * 100)) : 0;
-    document.getElementById('progressBar').style.width = progressPercentage + '%';
-    document.getElementById('progressPercentage').textContent = Math.round(progressPercentage) + '%';
-    document.getElementById('peakCount').textContent = peakTabCount;
 }
 
 /**
@@ -336,19 +316,40 @@ function initAgeDistributionChart() {
                     'today': 0,
                     'week': 0,
                     'month': 0,
-                    'older': 0
+                    'older': 0,
+                    'unknown': 0
                 };
                 
+                // Process tabs to categorize by age
                 tabData.forEach(tab => {
-                    const days = getDaysSince(tab.createdAt);
-                    if (days < 1) {
-                        categories.today++;
-                    } else if (days < 8) {
-                        categories.week++;
-                    } else if (days < 31) {
-                        categories.month++;
+                    if (!tab.createdAt) {
+                        // Try to extract date from URL
+                        const extractedDate = extractDateFromURL(tab.url);
+                        if (extractedDate) {
+                            const days = getDaysSince(extractedDate.toISOString());
+                            if (days < 1) {
+                                categories.today++;
+                            } else if (days < 8) {
+                                categories.week++;
+                            } else if (days < 31) {
+                                categories.month++;
+                            } else {
+                                categories.older++;
+                            }
+                        } else {
+                            categories.unknown++;
+                        }
                     } else {
-                        categories.older++;
+                        const days = getDaysSince(tab.createdAt);
+                        if (days < 1) {
+                            categories.today++;
+                        } else if (days < 8) {
+                            categories.week++;
+                        } else if (days < 31) {
+                            categories.month++;
+                        } else {
+                            categories.older++;
+                        }
                     }
                 });
                 
@@ -365,11 +366,11 @@ function initAgeDistributionChart() {
                         categories.week,
                         categories.month,
                         categories.older,
-                        categories.unknown || 0
+                        categories.unknown
                     ]
                 };
             }
-            // If we have no data, use empty values
+            // If no data is available, use empty data
             else {
                 chartData = {
                     labels: [
@@ -383,452 +384,341 @@ function initAgeDistributionChart() {
                 };
             }
             
-            // Create and update the chart
             updateAgeDistributionChart(chartData);
         })
         .catch(error => {
-            console.error("Error fetching distribution data:", error);
+            console.error("Error initializing age distribution chart:", error);
             
-            // Fallback to local data if available
-            if (tabData && tabData.length > 0) {
-                // Group tabs by age category
-                const categories = {
-                    'today': 0,
-                    'week': 0,
-                    'month': 0,
-                    'older': 0
-                };
-                
-                tabData.forEach(tab => {
-                    const days = getDaysSince(tab.createdAt);
-                    if (days < 1) {
-                        categories.today++;
-                    } else if (days < 8) {
-                        categories.week++;
-                    } else if (days < 31) {
-                        categories.month++;
-                    } else {
-                        categories.older++;
-                    }
-                });
-                
-                const chartData = {
-                    labels: [
-                        'Opened Today',
-                        'Open 1-7 Days',
-                        'Open 8-30 Days',
-                        'Open >30 Days',
-                        'Unknown Age'
-                    ],
-                    data: [
-                        categories.today,
-                        categories.week,
-                        categories.month,
-                        categories.older,
-                        categories.unknown || 0
-                    ]
-                };
-                
-                updateAgeDistributionChart(chartData);
-            }
+            // Use empty data on error
+            const chartData = {
+                labels: [
+                    'Opened Today',
+                    'Open 1-7 Days',
+                    'Open 8-30 Days',
+                    'Open >30 Days',
+                    'Unknown Age'
+                ],
+                data: [0, 0, 0, 0, 0]
+            };
+            
+            updateAgeDistributionChart(chartData);
         });
 }
 
 function updateAgeDistributionChart(chartData) {
-    // Calculate total for percentages
-    const total = chartData.data.reduce((acc, val) => acc + val, 0);
+    const ctx = document.getElementById('distributionChart').getContext('2d');
     
-    // Set up chart data
-    const data = {
-        labels: chartData.labels,
-        datasets: [{
-            data: chartData.data,
-            backgroundColor: [
-                '#4CAF50',  // Green for today
-                '#2196F3',  // Blue for week
-                '#FF9800',  // Orange for month
-                '#F44336',  // Red for older
-                '#95a5a6'   // Gray for unknown age
-            ],
-            borderWidth: 0,
-            hoverOffset: 4
-        }]
-    };
+    // Colors for each age category
+    const colors = [
+        'rgba(75, 192, 192, 0.8)',  // Today (teal)
+        'rgba(54, 162, 235, 0.8)',  // Week (blue)
+        'rgba(255, 206, 86, 0.8)',  // Month (yellow)
+        'rgba(255, 99, 132, 0.8)',  // Older (red)
+        'rgba(128, 128, 128, 0.8)'  // Unknown (gray)
+    ];
     
-    const ctx = document.getElementById('ageDistributionChart').getContext('2d');
-    
-    // Destroy existing chart if it exists
-    if (ageDistributionChart) {
-        ageDistributionChart.destroy();
-    }
-    
-    // Create new chart
-    ageDistributionChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const label = context.label || '';
-                            const value = context.raw || 0;
-                            const percentage = total ? Math.round((value / total) * 100) : 0;
-                            return `${label}: ${value} (${percentage}%)`;
+    // Create or update the chart
+    if (distributionChart) {
+        distributionChart.data.labels = chartData.labels;
+        distributionChart.data.datasets[0].data = chartData.data;
+        distributionChart.update();
+    } else {
+        distributionChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: chartData.labels,
+                datasets: [{
+                    data: chartData.data,
+                    backgroundColor: colors,
+                    borderColor: 'white',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%',
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            padding: 15,
+                            boxWidth: 12,
+                            font: {
+                                size: 12
+                            }
                         }
-                    }
-                },
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 20,
-                        // Add percentage to legend labels
-                        generateLabels: function(chart) {
-                            const labels = Chart.defaults.plugins.legend.labels.generateLabels(chart);
-                            const data = chart.data.datasets[0].data;
-                            const total = data.reduce((acc, val) => acc + val, 0);
-                            
-                            return labels.map((label, i) => {
-                                const value = data[i];
-                                const percentage = total ? Math.round((value / total) * 100) : 0;
-                                label.text = `${label.text} (${percentage}%)`;
-                                return label;
-                            });
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const label = context.label || '';
+                                const value = context.formattedValue;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = Math.round((context.raw / total) * 100);
+                                return `${label}: ${value} (${percentage}%)`;
+                            }
                         }
                     }
                 }
-            },
-            cutout: '70%'
-        }
-    });
+            }
+        });
+    }
 }
 
 /**
  * Initialize or update the daily progress chart
  */
 function initDailyProgressChart() {
-    // Use dailyProgressData from server if available, otherwise fallback to tabHistory
-    const progressData = dailyProgressData || tabHistory;
-    
-    if (!progressData || progressData.length === 0) {
-        console.log('No data for daily progress chart');
-        return;
-    }
-    
-    // Get the most recent data (up to 14 days)
-    const recentData = [...progressData]
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
-        .slice(-14);
-    
-    // Prepare the data arrays
-    const labels = [];
-    const avgCounts = [];
-    const minCounts = [];
-    const maxCounts = [];
-    
-    recentData.forEach(entry => {
-        const date = new Date(entry.date);
-        labels.push(new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date));
-        
-        // If we have detailed data from the server
-        if (entry.avg !== undefined) {
-            avgCounts.push(entry.avg);
-            minCounts.push(entry.min);
-            maxCounts.push(entry.max);
-        }
-        // Fallback to calculated values if using tabHistory
-        else {
-            const count = entry.count;
-            avgCounts.push(count);
-            minCounts.push(Math.round(Math.max(count * 0.85, count - 10)));
-            maxCounts.push(Math.round(Math.min(count * 1.15, count + 10)));
-        }
-    });
-    
-    // Set up chart data
-    const data = {
-        labels: labels,
-        datasets: [
-            {
-                label: 'Maximum',
-                data: maxCounts,
-                borderColor: 'rgba(231, 76, 60, 1)',
-                backgroundColor: 'rgba(231, 76, 60, 0.1)',
-                borderWidth: 2,
-                tension: 0.1,
-                fill: false
-            },
-            {
-                label: 'Average',
-                data: avgCounts,
-                borderColor: 'rgba(52, 152, 219, 1)',
-                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                borderWidth: 2,
-                tension: 0.1,
-                fill: false
-            },
-            {
-                label: 'Minimum',
-                data: minCounts,
-                borderColor: 'rgba(46, 204, 113, 1)',
-                backgroundColor: 'rgba(46, 204, 113, 0.1)',
-                borderWidth: 2,
-                tension: 0.1,
-                fill: false
+    fetch('/api/stats/daily-progress')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error("Error fetching daily progress data:", data.error);
+                return;
             }
-        ]
-    };
-    
-    const ctx = document.getElementById('dailyProgressChart');
-    
-    // If the chart element doesn't exist yet, create it
-    if (!ctx) {
-        const container = document.querySelector('.charts-container');
-        const chartDiv = document.createElement('div');
-        chartDiv.className = 'chart-card';
-        chartDiv.innerHTML = `
-            <h2>Daily Progress</h2>
-            <div class="chart-container">
-                <canvas id="dailyProgressChart"></canvas>
-            </div>
-        `;
-        container.appendChild(chartDiv);
-    }
-    
-    // Get the context (might have just been created)
-    const chartContext = document.getElementById('dailyProgressChart').getContext('2d');
-    
-    // Create or update the chart
-    if (window.dailyProgressChart) {
-        window.dailyProgressChart.destroy();
-    }
-    
-    window.dailyProgressChart = new Chart(chartContext, {
-        type: 'line',
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        precision: 0
+            
+            // Set up chart data
+            const chartData = {
+                labels: data.days || [],
+                counts: data.counts || []
+            };
+            
+            const ctx = document.getElementById('dailyProgressChart').getContext('2d');
+            
+            // Create or update the chart
+            if (dailyProgressChart) {
+                dailyProgressChart.data.labels = chartData.labels;
+                dailyProgressChart.data.datasets[0].data = chartData.counts;
+                dailyProgressChart.update();
+            } else {
+                dailyProgressChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [{
+                            label: 'Total Tabs',
+                            data: chartData.counts,
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderWidth: 2,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Tab Count'
+                                }
+                            }
+                        }
                     }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
+                });
             }
-        }
-    });
+        })
+        .catch(error => {
+            console.error("Error initializing daily progress chart:", error);
+        });
 }
 
 function initTabTrendChart() {
-    // Prepare data for chart
-    const dates = [];
-    const counts = [];
-    
-    // Sort history by date
-    const sortedHistory = [...tabHistory].sort((a, b) => new Date(a.date) - new Date(b.date));
-    
-    sortedHistory.forEach(entry => {
-        dates.push(formatDate(entry.date));
-        counts.push(entry.count);
-    });
-    
-    // Set up chart data
-    const data = {
-        labels: dates,
-        datasets: [{
-            label: 'Tab Count',
-            data: counts,
-            borderColor: '#2196F3',
-            backgroundColor: 'rgba(33, 150, 243, 0.1)',
-            fill: true,
-            tension: 0.4,
-            pointRadius: 4,
-            pointBackgroundColor: '#2196F3'
-        }]
-    };
-    
-    const ctx = document.getElementById('tabTrendChart').getContext('2d');
-    
-    // Destroy existing chart if it exists
-    if (tabTrendChart) {
-        tabTrendChart.destroy();
-    }
-    
-    // Create new chart
-    tabTrendChart = new Chart(ctx, {
-        type: 'line',
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        stepSize: 10
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: false
-                }
+    fetch('/api/stats/trends')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error("Error fetching trend data:", data.error);
+                return;
             }
-        }
-    });
+            
+            // Set up the trend data
+            const chartData = {
+                labels: data.dates || [],
+                counts: data.counts || [],
+                peakCounts: data.peakCounts || []
+            };
+            
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            
+            // Create or update the chart
+            if (tabTrendChart) {
+                tabTrendChart.data.labels = chartData.labels;
+                tabTrendChart.data.datasets[0].data = chartData.counts;
+                tabTrendChart.data.datasets[1].data = chartData.peakCounts;
+                tabTrendChart.update();
+            } else {
+                tabTrendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: chartData.labels,
+                        datasets: [
+                            {
+                                label: 'Current Tabs',
+                                data: chartData.counts,
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                                borderWidth: 2,
+                                fill: true,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Peak Tabs',
+                                data: chartData.peakCounts,
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                fill: false,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Tab Count'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            console.error("Error initializing trend chart:", error);
+        });
 }
 
 /**
  * Initialize or update the tab changes chart
  */
 function initTabChangesChart() {
-    // Use tabChangesData from server if available, otherwise don't show the chart
-    if (!tabChangesData || tabChangesData.length === 0) {
-        console.log('No data for tab changes chart');
-        return;
-    }
-    
-    // Get the most recent data (up to 14 days)
-    const recentData = [...tabChangesData]
-        .sort((a, b) => new Date(a.date) - new Date(b.date))
-        .slice(-14);
-    
-    // Prepare the data arrays
-    const labels = [];
-    const newTabs = [];
-    const closedTabs = [];
-    const totalTabs = [];
-    
-    recentData.forEach(entry => {
-        const date = new Date(entry.date);
-        labels.push(new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date));
-        
-        newTabs.push(entry.new_tabs);
-        closedTabs.push(entry.closed_tabs);
-        totalTabs.push(entry.total_tabs);
-    });
-    
-    // Set up chart data
-    const data = {
-        labels: labels,
-        datasets: [
-            {
-                label: 'Total Tabs',
-                data: totalTabs,
-                borderColor: 'rgba(52, 152, 219, 1)',
-                backgroundColor: 'rgba(52, 152, 219, 0.1)',
-                borderWidth: 2,
-                tension: 0.4,
-                fill: false,
-                yAxisID: 'y'
-            },
-            {
-                label: 'New Tabs',
-                data: newTabs,
-                borderColor: 'rgba(46, 204, 113, 1)',
-                backgroundColor: 'rgba(46, 204, 113, 0.5)',
-                borderWidth: 1,
-                tension: 0,
-                type: 'bar',
-                yAxisID: 'y1'
-            },
-            {
-                label: 'Closed Tabs',
-                data: closedTabs,
-                borderColor: 'rgba(231, 76, 60, 1)',
-                backgroundColor: 'rgba(231, 76, 60, 0.5)',
-                borderWidth: 1,
-                tension: 0,
-                type: 'bar',
-                yAxisID: 'y1'
+    fetch('/api/stats/tab-changes')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error("Error fetching tab changes data:", data.error);
+                return;
             }
-        ]
-    };
-    
-    // Create or select the chart container
-    let ctx = document.getElementById('tabChangesChart');
-    
-    // If the chart element doesn't exist yet, create it
-    if (!ctx) {
-        const container = document.querySelector('.charts-container');
-        const chartDiv = document.createElement('div');
-        chartDiv.className = 'chart-card';
-        chartDiv.innerHTML = `
-            <h2>Daily Tab Activity</h2>
-            <div class="chart-container">
-                <canvas id="tabChangesChart"></canvas>
-            </div>
-        `;
-        container.appendChild(chartDiv);
-        
-        // Get the context (now that it exists)
-        ctx = document.getElementById('tabChangesChart');
-    }
-    
-    const chartContext = ctx.getContext('2d');
-    
-    // Create or update the chart
-    if (tabChangesChart) {
-        tabChangesChart.destroy();
-    }
-    
-    tabChangesChart = new Chart(chartContext, {
-        type: 'line',
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    title: {
-                        display: true,
-                        text: 'Total Tabs'
+            
+            const ctx = document.getElementById('tabChangesChart').getContext('2d');
+            
+            // Create or update the chart
+            if (tabChangesChart) {
+                tabChangesChart.data.labels = data.days || [];
+                tabChangesChart.data.datasets[0].data = data.newTabs || [];
+                tabChangesChart.data.datasets[1].data = data.closedTabs || [];
+                tabChangesChart.data.datasets[2].data = data.totalTabs || [];
+                tabChangesChart.update();
+            } else {
+                tabChangesChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: data.days || [],
+                        datasets: [
+                            {
+                                label: 'New Tabs',
+                                data: data.newTabs || [],
+                                backgroundColor: 'rgba(75, 192, 192, 0.7)',
+                                borderColor: 'rgba(75, 192, 192, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Closed Tabs',
+                                data: data.closedTabs || [],
+                                backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                                borderColor: 'rgba(255, 99, 132, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Total Tabs',
+                                data: data.totalTabs || [],
+                                type: 'line',
+                                fill: false,
+                                backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                                borderColor: 'rgba(54, 162, 235, 1)',
+                                borderWidth: 2,
+                                pointRadius: 3,
+                                pointHoverRadius: 5
+                            }
+                        ]
                     },
-                    beginAtZero: true,
-                    ticks: {
-                        precision: 0
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                mode: 'index',
+                                intersect: false
+                            }
+                        },
+                        scales: {
+                            x: {
+                                title: {
+                                    display: true,
+                                    text: 'Date'
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Count'
+                                }
+                            }
+                        }
                     }
-                },
-                y1: {
-                    type: 'linear',
-                    display: true,
-                    position: 'right',
-                    title: {
-                        display: true,
-                        text: 'New/Closed Tabs'
-                    },
-                    beginAtZero: true,
-                    ticks: {
-                        precision: 0
-                    },
-                    grid: {
-                        drawOnChartArea: false
-                    }
-                },
-                x: {
-                    grid: {
-                        display: false
-                    }
-                }
-            },
-            interaction: {
-                mode: 'index',
-                intersect: false
+                });
             }
-        }
-    });
+        })
+        .catch(error => {
+            console.error("Error initializing tab changes chart:", error);
+        });
 }
 
 /**
@@ -838,44 +728,85 @@ function populateTabsTable() {
     const tableBody = document.getElementById('tabsList');
     tableBody.innerHTML = '';
     
-    // Sort tabs by age (oldest first)
-    const sortedTabs = [...tabData].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    // Process tabs for display
+    const processedTabs = tabData.map(tab => {
+        // Create processed tab object
+        const processed = {...tab};
+        
+        // Handle missing created date
+        if (!processed.createdAt) {
+            // Try to extract date from URL
+            const extractedDate = extractDateFromURL(processed.url);
+            if (extractedDate) {
+                processed.extractedDate = extractedDate;
+                processed.ageSource = 'url';
+            } else {
+                processed.ageSource = 'unknown';
+            }
+        } else {
+            processed.ageSource = 'created';
+        }
+        
+        // Calculate age information
+        if (processed.ageSource === 'created') {
+            processed.days = getDaysSince(processed.createdAt);
+        } else if (processed.ageSource === 'url') {
+            processed.days = getDaysSince(processed.extractedDate.toISOString());
+        } else {
+            processed.days = null;
+        }
+        
+        // Determine age category
+        if (processed.days === null) {
+            processed.category = 'Unknown Age';
+            processed.categoryClass = 'category-unknown';
+        } else if (processed.days < 1) {
+            processed.category = 'Opened Today';
+            processed.categoryClass = 'category-today';
+        } else if (processed.days < 8) {
+            processed.category = 'Open 1-7 Days';
+            processed.categoryClass = 'category-week';
+        } else if (processed.days < 31) {
+            processed.category = 'Open 8-30 Days';
+            processed.categoryClass = 'category-month';
+        } else {
+            processed.category = 'Open >30 Days';
+            processed.categoryClass = 'category-older';
+        }
+        
+        return processed;
+    });
+    
+    // Sort tabs by age (oldest first, unknown age at the end)
+    const sortedTabs = [...processedTabs].sort((a, b) => {
+        // Always put unknown age at the end
+        if (a.days === null && b.days === null) return 0;
+        if (a.days === null) return 1;
+        if (b.days === null) return -1;
+        // Otherwise sort by age
+        return a.days - b.days;
+    });
     
     sortedTabs.forEach(tab => {
         const row = document.createElement('tr');
         
-        // Determine the age category
-        let category, categoryClass;
-        
-        if (!tab.createdAt) {
-            category = 'Unknown Age';
-            categoryClass = 'category-unknown';
+        // Format the age display with source indicator
+        let ageDisplay;
+        if (tab.days === null) {
+            ageDisplay = 'Unknown';
         } else {
-            const days = getDaysSince(tab.createdAt);
-            if (days < 1) {
-                category = 'Opened Today';
-                categoryClass = 'category-today';
-            } else if (days < 8) {
-                category = 'Open 1-7 Days';
-                categoryClass = 'category-week';
-            } else if (days < 31) {
-                category = 'Open 8-30 Days';
-                categoryClass = 'category-month';
-            } else {
-                category = 'Open >30 Days';
-                categoryClass = 'category-older';
+            ageDisplay = formatAge(tab.days);
+            if (tab.ageSource === 'url') {
+                ageDisplay += ' <small>(from URL)</small>';
             }
         }
-        
-        // Format the age display
-        let ageDisplay = !tab.createdAt ? 'Unknown' : formatAge(getDaysSince(tab.createdAt));
         
         // Create the row content
         row.innerHTML = `
             <td title="${sanitize(tab.title)}">${truncateString(sanitize(tab.title), 50)}</td>
             <td title="${sanitize(tab.url)}">${truncateString(sanitize(tab.url), 50)}</td>
             <td>${ageDisplay}</td>
-            <td><span class="category-pill ${categoryClass}">${category}</span></td>
+            <td><span class="category-pill ${tab.categoryClass}">${tab.category}</span></td>
         `;
         
         tableBody.appendChild(row);
@@ -1040,4 +971,47 @@ function showError(message) {
             document.body.removeChild(errorElement);
         }, 500);
     }, 5000);
+}
+
+/**
+ * Extract date from URL patterns
+ * @param {string} url - The URL to extract date from
+ * @returns {Date|null} - Extracted date or null if not found
+ */
+function extractDateFromURL(url) {
+    if (!url) return null;
+    
+    try {
+        // Common date patterns in URLs
+        
+        // Pattern: /YYYY/MM/DD/ (e.g., /2024/04/02/)
+        const slashPattern = /\/(\d{4})\/(\d{1,2})\/(\d{1,2})\//;
+        const slashMatch = url.match(slashPattern);
+        if (slashMatch) {
+            const [_, year, month, day] = slashMatch;
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            if (!isNaN(date.getTime())) return date;
+        }
+        
+        // Pattern: /YYYY-MM-DD/ or ?date=YYYY-MM-DD
+        const dashPattern = /[\/\?].*?(\d{4}-\d{1,2}-\d{1,2})/;
+        const dashMatch = url.match(dashPattern);
+        if (dashMatch) {
+            const date = new Date(dashMatch[1]);
+            if (!isNaN(date.getTime())) return date;
+        }
+        
+        // Pattern: publication dates for news sites (common formats)
+        const pubDatePattern = /published[=\/](\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/i;
+        const pubMatch = url.match(pubDatePattern);
+        if (pubMatch) {
+            const date = new Date(pubMatch[1]);
+            if (!isNaN(date.getTime())) return date;
+        }
+        
+        return null;
+    } catch (e) {
+        console.warn("Error extracting date from URL:", e);
+        return null;
+    }
 }

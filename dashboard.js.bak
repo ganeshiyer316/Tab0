@@ -336,8 +336,7 @@ function initAgeDistributionChart() {
                     'today': 0,
                     'week': 0,
                     'month': 0,
-                    'older': 0,
-                    'unknown': 0
+                    'older': 0
                 };
                 
                 tabData.forEach(tab => {
@@ -358,13 +357,15 @@ function initAgeDistributionChart() {
                         'Opened Today',
                         'Open 1-7 Days',
                         'Open 8-30 Days',
-                        'Open >30 Days'
+                        'Open >30 Days',
+                        'Unknown Age'
                     ],
                     data: [
                         categories.today,
                         categories.week,
                         categories.month,
-                        categories.older
+                        categories.older,
+                        categories.unknown || 0
                     ]
                 };
             }
@@ -395,12 +396,8 @@ function initAgeDistributionChart() {
                     'today': 0,
                     'week': 0,
                     'month': 0,
-                    'older': 0,
-                    'unknown': 0
+                    'older': 0
                 };
-                    if (!tab.createdAt) {
-                        categories.unknown++;
-                    } else {
                 
                 tabData.forEach(tab => {
                     const days = getDaysSince(tab.createdAt);
@@ -408,28 +405,27 @@ function initAgeDistributionChart() {
                         categories.today++;
                     } else if (days < 8) {
                         categories.week++;
-                    }
                     } else if (days < 31) {
                         categories.month++;
                     } else {
-                        'Unknown Age'
                         categories.older++;
                     }
                 });
                 
                 const chartData = {
-                        categories.unknown
                     labels: [
                         'Opened Today',
                         'Open 1-7 Days',
                         'Open 8-30 Days',
-                        'Open >30 Days'
+                        'Open >30 Days',
+                        'Unknown Age'
                     ],
                     data: [
                         categories.today,
                         categories.week,
                         categories.month,
-                        categories.older
+                        categories.older,
+                        categories.unknown || 0
                     ]
                 };
                 
@@ -842,36 +838,85 @@ function populateTabsTable() {
     const tableBody = document.getElementById('tabsList');
     tableBody.innerHTML = '';
     
-    // Sort tabs by age (oldest first)
-    const sortedTabs = [...tabData].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    // Process tabs for display
+    const processedTabs = tabData.map(tab => {
+        // Create processed tab object
+        const processed = {...tab};
+        
+        // Handle missing created date
+        if (!processed.createdAt) {
+            // Try to extract date from URL
+            const extractedDate = extractDateFromURL(processed.url);
+            if (extractedDate) {
+                processed.extractedDate = extractedDate;
+                processed.ageSource = 'url';
+            } else {
+                processed.ageSource = 'unknown';
+            }
+        } else {
+            processed.ageSource = 'created';
+        }
+        
+        // Calculate age information
+        if (processed.ageSource === 'created') {
+            processed.days = getDaysSince(processed.createdAt);
+        } else if (processed.ageSource === 'url') {
+            processed.days = getDaysSince(processed.extractedDate.toISOString());
+        } else {
+            processed.days = null;
+        }
+        
+        // Determine age category
+        if (processed.days === null) {
+            processed.category = 'Unknown Age';
+            processed.categoryClass = 'category-unknown';
+        } else if (processed.days < 1) {
+            processed.category = 'Opened Today';
+            processed.categoryClass = 'category-today';
+        } else if (processed.days < 8) {
+            processed.category = 'Open 1-7 Days';
+            processed.categoryClass = 'category-week';
+        } else if (processed.days < 31) {
+            processed.category = 'Open 8-30 Days';
+            processed.categoryClass = 'category-month';
+        } else {
+            processed.category = 'Open >30 Days';
+            processed.categoryClass = 'category-older';
+        }
+        
+        return processed;
+    });
+    
+    // Sort tabs by age (oldest first, unknown age at the end)
+    const sortedTabs = [...processedTabs].sort((a, b) => {
+        // Always put unknown age at the end
+        if (a.days === null && b.days === null) return 0;
+        if (a.days === null) return 1;
+        if (b.days === null) return -1;
+        // Otherwise sort by age
+        return a.days - b.days;
+    });
     
     sortedTabs.forEach(tab => {
         const row = document.createElement('tr');
         
-        // Determine the age category
-        const days = getDaysSince(tab.createdAt);
-        let category, categoryClass;
-        
-        if (days < 1) {
-            category = 'Opened Today';
-            categoryClass = 'category-today';
-        } else if (days < 8) {
-            category = 'Open 1-7 Days';
-            categoryClass = 'category-week';
-        } else if (days < 31) {
-            category = 'Open 8-30 Days';
-            categoryClass = 'category-month';
+        // Format the age display with source indicator
+        let ageDisplay;
+        if (tab.days === null) {
+            ageDisplay = 'Unknown';
         } else {
-            category = 'Open >30 Days';
-            categoryClass = 'category-older';
+            ageDisplay = formatAge(tab.days);
+            if (tab.ageSource === 'url') {
+                ageDisplay += ' <small>(from URL)</small>';
+            }
         }
         
         // Create the row content
         row.innerHTML = `
             <td title="${sanitize(tab.title)}">${truncateString(sanitize(tab.title), 50)}</td>
             <td title="${sanitize(tab.url)}">${truncateString(sanitize(tab.url), 50)}</td>
-            <td>${formatAge(days)}</td>
-            <td><span class="category-pill ${categoryClass}">${category}</span></td>
+            <td>${ageDisplay}</td>
+            <td><span class="category-pill ${tab.categoryClass}">${tab.category}</span></td>
         `;
         
         tableBody.appendChild(row);
@@ -901,7 +946,8 @@ function filterTabs() {
             (categoryFilter === 'today' && categoryText.includes('opened today')) ||
             (categoryFilter === 'week' && categoryText.includes('1-7 days')) ||
             (categoryFilter === 'month' && categoryText.includes('8-30 days')) ||
-            (categoryFilter === 'older' && categoryText.includes('>30 days'));
+            (categoryFilter === 'older' && categoryText.includes('>30 days')) ||
+            (categoryFilter === 'unknown' && categoryText.includes('unknown age'));
         
         rows[i].style.display = matchesSearch && matchesCategory ? '' : 'none';
     }
@@ -1035,4 +1081,47 @@ function showError(message) {
             document.body.removeChild(errorElement);
         }, 500);
     }, 5000);
+}
+
+/**
+ * Extract date from URL patterns
+ * @param {string} url - The URL to extract date from
+ * @returns {Date|null} - Extracted date or null if not found
+ */
+function extractDateFromURL(url) {
+    if (!url) return null;
+    
+    try {
+        // Common date patterns in URLs
+        
+        // Pattern: /YYYY/MM/DD/ (e.g., /2024/04/02/)
+        const slashPattern = /\/(\d{4})\/(\d{1,2})\/(\d{1,2})\//;
+        const slashMatch = url.match(slashPattern);
+        if (slashMatch) {
+            const [_, year, month, day] = slashMatch;
+            const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            if (!isNaN(date.getTime())) return date;
+        }
+        
+        // Pattern: /YYYY-MM-DD/ or ?date=YYYY-MM-DD
+        const dashPattern = /[\/\?].*?(\d{4}-\d{1,2}-\d{1,2})/;
+        const dashMatch = url.match(dashPattern);
+        if (dashMatch) {
+            const date = new Date(dashMatch[1]);
+            if (!isNaN(date.getTime())) return date;
+        }
+        
+        // Pattern: publication dates for news sites (common formats)
+        const pubDatePattern = /published[=\/](\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/i;
+        const pubMatch = url.match(pubDatePattern);
+        if (pubMatch) {
+            const date = new Date(pubMatch[1]);
+            if (!isNaN(date.getTime())) return date;
+        }
+        
+        return null;
+    } catch (e) {
+        console.warn("Error extracting date from URL:", e);
+        return null;
+    }
 }

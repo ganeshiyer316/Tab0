@@ -125,17 +125,33 @@ def import_data():
         
         # Add individual tab details
         for tab in tabs:
-            # Skip tabs with unknown/unverified creation dates
+            # For tabs with unknown/unverified creation dates
             if not tab.get('createdAt') or (tab.get('isVerified') is False):
-                # Still store the tab but with null creation date and age
-                tab_detail = TabDetail(
-                    snapshot_id=snapshot.id,
-                    browser_tab_id=tab.get('id'),
-                    title=tab.get('title', '')[:255],  # Truncate to fit column
-                    url=tab.get('url', ''),
-                    created_at=None,
-                    age_days=None
-                )
+                # Try to extract date from URL
+                url = tab.get('url', '')
+                extracted_date = extract_date_from_url(url)
+                
+                if extracted_date:
+                    # Use the extracted date
+                    age_days = (datetime.utcnow() - extracted_date).days
+                    tab_detail = TabDetail(
+                        snapshot_id=snapshot.id,
+                        browser_tab_id=tab.get('id'),
+                        title=tab.get('title', '')[:255],  # Truncate to fit column
+                        url=url,
+                        created_at=extracted_date,
+                        age_days=age_days
+                    )
+                else:
+                    # No date could be extracted
+                    tab_detail = TabDetail(
+                        snapshot_id=snapshot.id,
+                        browser_tab_id=tab.get('id'),
+                        title=tab.get('title', '')[:255],  # Truncate to fit column
+                        url=url,
+                        created_at=None,
+                        age_days=None
+                    )
             else:
                 # Normal case with verified creation date
                 created_at = datetime.fromisoformat(tab.get('createdAt').replace('Z', '+00:00'))
@@ -350,22 +366,37 @@ def categorize_tabs_by_age(tabs):
     categories = {'today': 0, 'week': 0, 'month': 0, 'older': 0, 'unknown': 0}
     
     for tab in tabs:
-        # Check if this tab has a createdAt value and is verified
-        if not tab.get('createdAt') or (tab.get('isVerified') is False):
-            categories['unknown'] += 1
-            continue
+        # First check if tab has a verified creation date
+        if tab.get('createdAt') and tab.get('isVerified') is not False:
+            created_at = datetime.fromisoformat(tab.get('createdAt').replace('Z', '+00:00'))
+            age_days = (now - created_at).days
             
-        created_at = datetime.fromisoformat(tab.get('createdAt').replace('Z', '+00:00'))
-        age_days = (now - created_at).days
-        
-        if age_days < 1:
-            categories['today'] += 1
-        elif age_days < 7:
-            categories['week'] += 1
-        elif age_days < 30:
-            categories['month'] += 1
+            if age_days < 1:
+                categories['today'] += 1
+            elif age_days < 7:
+                categories['week'] += 1
+            elif age_days < 30:
+                categories['month'] += 1
+            else:
+                categories['older'] += 1
         else:
-            categories['older'] += 1
+            # No verified creation date - try to extract date from URL
+            url = tab.get('url', '')
+            extracted_date = extract_date_from_url(url)
+            
+            if extracted_date:
+                age_days = (now - extracted_date).days
+                
+                if age_days < 1:
+                    categories['today'] += 1
+                elif age_days < 7:
+                    categories['week'] += 1
+                elif age_days < 30:
+                    categories['month'] += 1
+                else:
+                    categories['older'] += 1
+            else:
+                categories['unknown'] += 1
             
     return categories
 
@@ -381,6 +412,52 @@ def extract_domain(url):
             
         return domain
     except:
+        return None
+
+def extract_date_from_url(url):
+    """Extract date from URL patterns"""
+    if not url:
+        return None
+    
+    try:
+        # Pattern: /YYYY/MM/DD/ (e.g., /2024/04/02/)
+        slash_pattern = r'/(\d{4})/(\d{1,2})/(\d{1,2})/'
+        slash_match = re.search(slash_pattern, url)
+        if slash_match:
+            year, month, day = map(int, slash_match.groups())
+            try:
+                return datetime(year, month, day)
+            except ValueError:
+                pass
+        
+        # Pattern: /YYYY-MM-DD/ or ?date=YYYY-MM-DD
+        dash_pattern = r'[\/\?].*?(\d{4}-\d{1,2}-\d{1,2})'
+        dash_match = re.search(dash_pattern, url)
+        if dash_match:
+            date_str = dash_match.group(1)
+            try:
+                return datetime.strptime(date_str, '%Y-%m-%d')
+            except ValueError:
+                pass
+        
+        # Pattern: publication dates for news sites (common formats)
+        pub_date_pattern = r'published[=\/](\d{4}[-\/]\d{1,2}[-\/]\d{1,2})'
+        pub_match = re.search(pub_date_pattern, url, re.IGNORECASE)
+        if pub_match:
+            date_str = pub_match.group(1)
+            try:
+                # Try dash format first (YYYY-MM-DD)
+                if '-' in date_str:
+                    return datetime.strptime(date_str, '%Y-%m-%d')
+                # Try slash format (YYYY/MM/DD)
+                else:
+                    return datetime.strptime(date_str, '%Y/%m/%d')
+            except ValueError:
+                pass
+        
+        return None
+    except Exception as e:
+        print(f"Error extracting date from URL: {e}")
         return None
 
 if __name__ == '__main__':
