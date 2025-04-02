@@ -2,6 +2,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Set up tab navigation
   setupTabs();
   
+  // Check if Chart.js is loaded properly
+  const chartFallbackMessage = document.getElementById('chart-fallback-message');
+  if (typeof Chart === 'undefined') {
+    console.error('Chart.js is not loaded properly');
+    chartFallbackMessage.style.display = 'block';
+    chartFallbackMessage.textContent = 'Chart.js library failed to load. Some visualization features may be unavailable.';
+  } else {
+    chartFallbackMessage.style.display = 'none';
+  }
+  
   // Load data and initialize UI
   await loadAndInitializeData();
   
@@ -328,6 +338,62 @@ function initDailyProgressChart(tabHistory) {
   });
 }
 
+// Helper functions for date formatting and tab age calculation
+function formatDate(dateString) {
+  if (!dateString) return 'Unknown';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'Invalid date';
+  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function calculateTabAge(dateString) {
+  if (!dateString) return { days: -1, label: 'Unknown Age' };
+  
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return { days: -1, label: 'Invalid Date' };
+  
+  const now = new Date();
+  const diffTime = Math.abs(now - date);
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) {
+    // Calculate hours for today
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+    if (diffHours < 1) {
+      const diffMinutes = Math.floor(diffTime / (1000 * 60));
+      return { days: 0, label: `${diffMinutes} min${diffMinutes !== 1 ? 's' : ''}` };
+    }
+    return { days: 0, label: `${diffHours} hr${diffHours !== 1 ? 's' : ''}` };
+  } else if (diffDays < 7) {
+    return { days: diffDays, label: `${diffDays} day${diffDays !== 1 ? 's' : ''}` };
+  } else if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return { days: diffDays, label: `${weeks} week${weeks !== 1 ? 's' : ''}` };
+  } else if (diffDays < 365) {
+    const months = Math.floor(diffDays / 30);
+    return { days: diffDays, label: `${months} month${months !== 1 ? 's' : ''}` };
+  } else {
+    const years = Math.floor(diffDays / 365);
+    return { days: diffDays, label: `${years} year${years !== 1 ? 's' : ''}` };
+  }
+}
+
+function getAgeColor(dateString) {
+  if (!dateString) return '#999999'; // Unknown age
+  
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '#999999'; // Invalid date
+  
+  const now = new Date();
+  const diffTime = Math.abs(now - date);
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 1) return '#2ecc71'; // Today - Green
+  if (diffDays < 7) return '#3498db'; // This week - Blue
+  if (diffDays < 30) return '#f39c12'; // This month - Orange
+  return '#e74c3c'; // Older - Red
+}
+
 function populateTabsTable(tabs) {
   const tableBody = document.getElementById('tabsTableBody');
   tableBody.innerHTML = '';
@@ -380,15 +446,34 @@ function populateTabsTable(tabs) {
   document.querySelectorAll('.open-tab').forEach(button => {
     button.addEventListener('click', () => {
       const tabId = parseInt(button.getAttribute('data-id'));
-      chrome.tabs.update(tabId, { active: true }, function(tab) {
+      // First get the window of the tab to focus that window too
+      chrome.tabs.get(tabId, function(tab) {
         if (chrome.runtime.lastError) {
-          console.error('Error opening tab:', chrome.runtime.lastError);
-          showError(`Could not open tab: ${chrome.runtime.lastError.message}`);
-          // The tab might not exist anymore, we should update the UI
+          console.error('Error getting tab:', chrome.runtime.lastError);
+          showError(`Could not find tab: ${chrome.runtime.lastError.message}`);
+          
+          // The tab might not exist anymore, refresh the data
           setTimeout(() => {
-            loadAndInitializeData(); // Refresh the data
+            loadAndInitializeData();
           }, 500);
+          return;
         }
+        
+        // Focus the window containing this tab
+        chrome.windows.update(tab.windowId, { focused: true }, function() {
+          // Then activate the tab
+          chrome.tabs.update(tabId, { active: true }, function(updatedTab) {
+            if (chrome.runtime.lastError) {
+              console.error('Error opening tab:', chrome.runtime.lastError);
+              showError(`Could not open tab: ${chrome.runtime.lastError.message}`);
+              
+              // Refresh the data if there was an error
+              setTimeout(() => {
+                loadAndInitializeData();
+              }, 500);
+            }
+          });
+        });
       });
     });
   });

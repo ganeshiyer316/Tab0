@@ -436,6 +436,67 @@ chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) =
   }
 });
 
+// Helper function to extract date from URLs
+function extractDateFromURL(url) {
+  if (!url) return null;
+  
+  try {
+    // Pattern: /YYYY/MM/DD/ (e.g., /2024/04/02/)
+    const slashPattern = /\/(\d{4})\/(\d{1,2})\/(\d{1,2})\//;
+    const slashMatch = url.match(slashPattern);
+    if (slashMatch) {
+      const [_, year, month, day] = slashMatch;
+      const extractedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      if (!isNaN(extractedDate.getTime())) {
+        return extractedDate;
+      }
+    }
+    
+    // Pattern: /YYYY-MM-DD/ or ?date=YYYY-MM-DD
+    const dashPattern = /[\/\?].*?(\d{4}-\d{1,2}-\d{1,2})/;
+    const dashMatch = url.match(dashPattern);
+    if (dashMatch) {
+      const dateStr = dashMatch[1];
+      const extractedDate = new Date(dateStr);
+      if (!isNaN(extractedDate.getTime())) {
+        return extractedDate;
+      }
+    }
+    
+    // Pattern: publication dates for news sites (common formats)
+    const pubDatePattern = /published[=\/](\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/i;
+    const pubMatch = url.match(pubDatePattern);
+    if (pubMatch) {
+      const dateStr = pubMatch[1];
+      // Try dash format (YYYY-MM-DD)
+      if (dateStr.includes('-')) {
+        const extractedDate = new Date(dateStr);
+        if (!isNaN(extractedDate.getTime())) {
+          return extractedDate;
+        }
+      } else {
+        // Try slash format (YYYY/MM/DD)
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          const extractedDate = new Date(
+            parseInt(parts[0]), 
+            parseInt(parts[1]) - 1, 
+            parseInt(parts[2])
+          );
+          if (!isNaN(extractedDate.getTime())) {
+            return extractedDate;
+          }
+        }
+      }
+    }
+    
+    return null;
+  } catch (e) {
+    console.error("Error extracting date from URL:", e);
+    return null;
+  }
+}
+
 // Capture current tabs with distribution across age categories
 // This is only used at initial installation to provide more meaningful data
 async function captureCurrentTabsWithDistribution() {
@@ -453,14 +514,25 @@ async function captureCurrentTabsWithDistribution() {
     // Process current tabs - all pre-existing tabs will have unknown creation time for 100% accuracy
     const now = new Date();
     const processedTabs = tabs.map((tab) => {
-      // For pre-existing tabs at install time, we mark age as unknown to ensure data integrity
-      // Only tabs created after extension installation will have verified creation dates
+      // For pre-existing tabs at install time, try to extract date from URL first
+      const extractedDate = extractDateFromURL(tab.url);
+      
+      // Attempt a more aggressive URL date extraction if simple method fails
+      let createdAt = null;
+      if (extractedDate) {
+        createdAt = extractedDate.toISOString();
+        console.log(`Date extracted from URL for ${tab.title}: ${createdAt}`);
+      } else {
+        // Try additional patterns for URL date extraction (done in utils.js now)
+        console.log(`No date extracted from URL for ${tab.title}`);
+      }
+      
       return {
         id: tab.id,
         url: tab.url,
         title: tab.title,
         favIconUrl: tab.favIconUrl,
-        createdAt: null, // null indicates unknown creation date
+        createdAt: createdAt, // Use URL date or null if not found
         isVerified: false // Flag to indicate this is not a verified date
       };
     });

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tab Age Tracker",
-  "version": "1.4",
+  "version": "1.5",
   "description": "Tracks and analyzes the age of your open tabs to help you reduce clutter",
   "permissions": [
     "tabs",
@@ -9,6 +9,9 @@
     "alarms",
     "notifications"
   ],
+  "content_security_policy": {
+    "extension_pages": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://* data:"
+  },
   "background": {
     "service_worker": "background.js"
   },
