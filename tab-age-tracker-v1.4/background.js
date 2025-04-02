@@ -517,12 +517,22 @@ async function captureCurrentTabsWithDistribution() {
       // For pre-existing tabs at install time, try to extract date from URL first
       const extractedDate = extractDateFromURL(tab.url);
       
+      // Attempt a more aggressive URL date extraction if simple method fails
+      let createdAt = null;
+      if (extractedDate) {
+        createdAt = extractedDate.toISOString();
+        console.log(`Date extracted from URL for ${tab.title}: ${createdAt}`);
+      } else {
+        // Try additional patterns for URL date extraction (done in utils.js now)
+        console.log(`No date extracted from URL for ${tab.title}`);
+      }
+      
       return {
         id: tab.id,
         url: tab.url,
         title: tab.title,
         favIconUrl: tab.favIconUrl,
-        createdAt: extractedDate ? extractedDate.toISOString() : null, // Use URL date or null if not found
+        createdAt: createdAt, // Use URL date or null if not found
         isVerified: false // Flag to indicate this is not a verified date
       };
     });

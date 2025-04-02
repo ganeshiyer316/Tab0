@@ -2,6 +2,16 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Set up tab navigation
   setupTabs();
   
+  // Check if Chart.js is loaded properly
+  const chartFallbackMessage = document.getElementById('chart-fallback-message');
+  if (typeof Chart === 'undefined') {
+    console.error('Chart.js is not loaded properly');
+    chartFallbackMessage.style.display = 'block';
+    chartFallbackMessage.textContent = 'Chart.js library failed to load. Some visualization features may be unavailable.';
+  } else {
+    chartFallbackMessage.style.display = 'none';
+  }
+  
   // Load data and initialize UI
   await loadAndInitializeData();
   
