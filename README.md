@@ -46,9 +46,11 @@ If you want to make changes to the extension or build it yourself:
 
 Tab Age Tracker respects your privacy:
 - It only tracks tab URLs, titles, and creation times
-- All data is stored locally on your computer
-- No data is sent to any remote servers
+- Detailed tab data is stored locally on your computer
+- Only aggregated statistics are sent to the server for trend analysis
+- No personally identifiable information is collected
 - No tab content is read or analyzed
+- You can use the extension without the web dashboard if preferred
 
 ## License
 
@@ -59,6 +61,20 @@ This extension is available under the MIT License. See the LICENSE file for more
 If you encounter any issues or have suggestions for improvements, please open an issue in the GitHub repository.
 
 ## Changelog
+
+### Version 1.3
+- Fixed Chart.js library inclusion in the extension package
+- Added URL date extraction feature to improve tab age accuracy
+- Added "from URL" indicator for tabs with age derived from URL patterns
+- Improved data synchronization with server for better trends analysis
+- Enhanced dashboard with daily progress tracking
+
+### Version 1.2
+- Added web dashboard for comprehensive analytics
+- Implemented server-side storage for long-term trend analysis
+- Added tab grouping suggestions based on URL patterns
+- New chart showing daily tab changes (new tabs, closed tabs, total)
+- Improved tab age distribution visualization with percentage view
 
 ### Version 1.1
 - Improved tab age category labels for better clarity:
