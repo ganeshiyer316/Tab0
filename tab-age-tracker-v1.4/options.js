@@ -328,6 +328,62 @@ function initDailyProgressChart(tabHistory) {
   });
 }
 
+// Helper functions for date formatting and tab age calculation
+function formatDate(dateString) {
+  if (!dateString) return 'Unknown';
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'Invalid date';
+  return date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function calculateTabAge(dateString) {
+  if (!dateString) return { days: -1, label: 'Unknown Age' };
+  
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return { days: -1, label: 'Invalid Date' };
+  
+  const now = new Date();
+  const diffTime = Math.abs(now - date);
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) {
+    // Calculate hours for today
+    const diffHours = Math.floor(diffTime / (1000 * 60 * 60));
+    if (diffHours < 1) {
+      const diffMinutes = Math.floor(diffTime / (1000 * 60));
+      return { days: 0, label: `${diffMinutes} min${diffMinutes !== 1 ? 's' : ''}` };
+    }
+    return { days: 0, label: `${diffHours} hr${diffHours !== 1 ? 's' : ''}` };
+  } else if (diffDays < 7) {
+    return { days: diffDays, label: `${diffDays} day${diffDays !== 1 ? 's' : ''}` };
+  } else if (diffDays < 30) {
+    const weeks = Math.floor(diffDays / 7);
+    return { days: diffDays, label: `${weeks} week${weeks !== 1 ? 's' : ''}` };
+  } else if (diffDays < 365) {
+    const months = Math.floor(diffDays / 30);
+    return { days: diffDays, label: `${months} month${months !== 1 ? 's' : ''}` };
+  } else {
+    const years = Math.floor(diffDays / 365);
+    return { days: diffDays, label: `${years} year${years !== 1 ? 's' : ''}` };
+  }
+}
+
+function getAgeColor(dateString) {
+  if (!dateString) return '#999999'; // Unknown age
+  
+  const date = new Date(dateString);
+  if (isNaN(date.getTime())) return '#999999'; // Invalid date
+  
+  const now = new Date();
+  const diffTime = Math.abs(now - date);
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 1) return '#2ecc71'; // Today - Green
+  if (diffDays < 7) return '#3498db'; // This week - Blue
+  if (diffDays < 30) return '#f39c12'; // This month - Orange
+  return '#e74c3c'; // Older - Red
+}
+
 function populateTabsTable(tabs) {
   const tableBody = document.getElementById('tabsTableBody');
   tableBody.innerHTML = '';
