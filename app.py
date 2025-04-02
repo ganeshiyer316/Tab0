@@ -26,6 +26,8 @@ class TabSnapshot(db.Model):
     month_count = db.Column(db.Integer)
     older_count = db.Column(db.Integer)
     peak_count = db.Column(db.Integer)
+    new_tabs = db.Column(db.Integer, default=0)
+    closed_tabs = db.Column(db.Integer, default=0)
 
 class TabDetail(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -83,6 +85,27 @@ def import_data():
         # Get peak count
         peak_count = data.get('peakTabCount', tab_count)
         
+        # Get new and closed tabs count if available
+        new_tabs = data.get('newTabs', 0)
+        closed_tabs = data.get('closedTabs', 0)
+        
+        # Get previous snapshot for comparing
+        previous_snapshot = TabSnapshot.query.order_by(TabSnapshot.timestamp.desc()).first()
+        
+        # If we have previous data but don't have explicit new/closed counts,
+        # calculate based on difference in total tabs
+        if previous_snapshot and new_tabs == 0 and closed_tabs == 0:
+            previous_count = previous_snapshot.count
+            
+            # If current count > previous count, some tabs were added
+            if tab_count > previous_count:
+                new_tabs = tab_count - previous_count
+                closed_tabs = 0
+            # If current count < previous count, some tabs were closed
+            elif tab_count < previous_count:
+                closed_tabs = previous_count - tab_count
+                new_tabs = 0
+        
         # Create a new snapshot
         snapshot = TabSnapshot(
             count=tab_count,
@@ -90,7 +113,9 @@ def import_data():
             week_count=age_categories.get('week', 0),
             month_count=age_categories.get('month', 0),
             older_count=age_categories.get('older', 0),
-            peak_count=peak_count
+            peak_count=peak_count,
+            new_tabs=new_tabs,
+            closed_tabs=closed_tabs
         )
         
         db.session.add(snapshot)
@@ -161,7 +186,9 @@ def get_daily_progress():
             cast(TabSnapshot.timestamp, Date).label('date'),
             func.avg(TabSnapshot.count).label('avg_count'),
             func.min(TabSnapshot.count).label('min_count'),
-            func.max(TabSnapshot.count).label('max_count')
+            func.max(TabSnapshot.count).label('max_count'),
+            func.sum(TabSnapshot.new_tabs).label('new_tabs'),
+            func.sum(TabSnapshot.closed_tabs).label('closed_tabs')
         ).filter(
             TabSnapshot.timestamp.between(start_date, end_date)
         ).group_by(
@@ -176,7 +203,9 @@ def get_daily_progress():
                 'date': item.date.isoformat(),
                 'avg': round(item.avg_count),
                 'min': item.min_count,
-                'max': item.max_count
+                'max': item.max_count,
+                'new': item.new_tabs or 0,
+                'closed': item.closed_tabs or 0
             }
             for item in progress_data
         ]
@@ -185,6 +214,45 @@ def get_daily_progress():
         
     except Exception as e:
         app.logger.error(f"Error getting daily progress data: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+        
+@app.route('/api/stats/tab-changes', methods=['GET'])
+def get_tab_changes():
+    """Get daily tab changes (new, closed, total)"""
+    try:
+        # Get the last 14 days of data
+        end_date = datetime.utcnow()
+        start_date = end_date - timedelta(days=14)
+        
+        # Get daily summary
+        daily_data = db.session.query(
+            cast(TabSnapshot.timestamp, Date).label('date'),
+            func.sum(TabSnapshot.new_tabs).label('new_tabs'),
+            func.sum(TabSnapshot.closed_tabs).label('closed_tabs'),
+            func.avg(TabSnapshot.count).label('total_tabs')
+        ).filter(
+            TabSnapshot.timestamp.between(start_date, end_date)
+        ).group_by(
+            cast(TabSnapshot.timestamp, Date)
+        ).order_by(
+            cast(TabSnapshot.timestamp, Date)
+        ).all()
+        
+        # Format the result
+        result = [
+            {
+                'date': item.date.isoformat(),
+                'new_tabs': item.new_tabs or 0,
+                'closed_tabs': item.closed_tabs or 0,
+                'total_tabs': round(item.total_tabs or 0)
+            }
+            for item in daily_data
+        ]
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        app.logger.error(f"Error getting tab changes data: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/stats/distribution', methods=['GET'])

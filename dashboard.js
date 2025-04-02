@@ -6,9 +6,11 @@
 let tabData = null;
 let tabHistory = null;
 let dailyProgressData = null;
+let tabChangesData = null;
 let ageDistributionChart = null;
 let tabTrendChart = null;
 let dailyProgressChart = null;
+let tabChangesChart = null;
 
 // Initialize the dashboard
 document.addEventListener('DOMContentLoaded', () => {
@@ -157,6 +159,25 @@ function updateDashboard() {
             showError("Error fetching daily progress data: " + error);
         });
         
+    // Fetch tab changes data from server
+    fetch('/api/stats/tab-changes')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                showError("Error fetching tab changes data: " + data.error);
+                return;
+            }
+            
+            // Update tab changes data
+            tabChangesData = data;
+            
+            // Initialize tab changes chart
+            initTabChangesChart();
+        })
+        .catch(error => {
+            showError("Error fetching tab changes data: " + error);
+        });
+        
     // Fetch tab group suggestions
     fetch('/api/suggest/groups')
         .then(response => response.json())
@@ -276,6 +297,7 @@ function initializeCharts() {
     initAgeDistributionChart();
     initTabTrendChart();
     initDailyProgressChart();
+    initTabChangesChart();
 }
 
 /**
@@ -654,6 +676,150 @@ function initTabTrendChart() {
                 legend: {
                     display: false
                 }
+            }
+        }
+    });
+}
+
+/**
+ * Initialize or update the tab changes chart
+ */
+function initTabChangesChart() {
+    // Use tabChangesData from server if available, otherwise don't show the chart
+    if (!tabChangesData || tabChangesData.length === 0) {
+        console.log('No data for tab changes chart');
+        return;
+    }
+    
+    // Get the most recent data (up to 14 days)
+    const recentData = [...tabChangesData]
+        .sort((a, b) => new Date(a.date) - new Date(b.date))
+        .slice(-14);
+    
+    // Prepare the data arrays
+    const labels = [];
+    const newTabs = [];
+    const closedTabs = [];
+    const totalTabs = [];
+    
+    recentData.forEach(entry => {
+        const date = new Date(entry.date);
+        labels.push(new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(date));
+        
+        newTabs.push(entry.new_tabs);
+        closedTabs.push(entry.closed_tabs);
+        totalTabs.push(entry.total_tabs);
+    });
+    
+    // Set up chart data
+    const data = {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Total Tabs',
+                data: totalTabs,
+                borderColor: 'rgba(52, 152, 219, 1)',
+                backgroundColor: 'rgba(52, 152, 219, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: false,
+                yAxisID: 'y'
+            },
+            {
+                label: 'New Tabs',
+                data: newTabs,
+                borderColor: 'rgba(46, 204, 113, 1)',
+                backgroundColor: 'rgba(46, 204, 113, 0.5)',
+                borderWidth: 1,
+                tension: 0,
+                type: 'bar',
+                yAxisID: 'y1'
+            },
+            {
+                label: 'Closed Tabs',
+                data: closedTabs,
+                borderColor: 'rgba(231, 76, 60, 1)',
+                backgroundColor: 'rgba(231, 76, 60, 0.5)',
+                borderWidth: 1,
+                tension: 0,
+                type: 'bar',
+                yAxisID: 'y1'
+            }
+        ]
+    };
+    
+    // Create or select the chart container
+    let ctx = document.getElementById('tabChangesChart');
+    
+    // If the chart element doesn't exist yet, create it
+    if (!ctx) {
+        const container = document.querySelector('.charts-container');
+        const chartDiv = document.createElement('div');
+        chartDiv.className = 'chart-card';
+        chartDiv.innerHTML = `
+            <h2>Daily Tab Activity</h2>
+            <div class="chart-container">
+                <canvas id="tabChangesChart"></canvas>
+            </div>
+        `;
+        container.appendChild(chartDiv);
+        
+        // Get the context (now that it exists)
+        ctx = document.getElementById('tabChangesChart');
+    }
+    
+    const chartContext = ctx.getContext('2d');
+    
+    // Create or update the chart
+    if (tabChangesChart) {
+        tabChangesChart.destroy();
+    }
+    
+    tabChangesChart = new Chart(chartContext, {
+        type: 'line',
+        data: data,
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: {
+                        display: true,
+                        text: 'Total Tabs'
+                    },
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: {
+                        display: true,
+                        text: 'New/Closed Tabs'
+                    },
+                    beginAtZero: true,
+                    ticks: {
+                        precision: 0
+                    },
+                    grid: {
+                        drawOnChartArea: false
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            interaction: {
+                mode: 'index',
+                intersect: false
             }
         }
     });
