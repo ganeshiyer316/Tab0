@@ -275,24 +275,54 @@ async function updateExtensionBadge() {
     }
     
     if (badgeType === 'age' && tabs.length > 0) {
-      // Get only verified tabs with actual creation dates
+      // First try to find tabs with verified creation dates
       const verifiedTabs = tabs.filter(tab => 
         tab.createdAt && (!tab.hasOwnProperty('isVerified') || tab.isVerified)
       );
       
-      if (verifiedTabs.length === 0) {
-        // If no verified tabs, show a placeholder badge
+      // Then try to find tabs with dates that can be extracted from URLs
+      const tabsWithExtractableDates = tabs.filter(tab => {
+        if (verifiedTabs.includes(tab)) return false; // Don't duplicate tabs that already have creation dates
+        return tab.url && extractDateFromURL(tab.url) !== null;
+      });
+      
+      if (verifiedTabs.length === 0 && tabsWithExtractableDates.length === 0) {
+        // If no tabs have any date information, show a placeholder badge
         chrome.action.setBadgeText({ text: '?' });
         chrome.action.setBadgeBackgroundColor({ color: '#95a5a6' }); // Gray for unknown
         return;
       }
       
-      // Find oldest verified tab
-      const sortedTabs = [...verifiedTabs].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-      const oldestTab = sortedTabs[0];
-      const createdAt = new Date(oldestTab.createdAt);
+      let oldestTab, oldestDate, ageInDays;
+      
+      if (verifiedTabs.length > 0) {
+        // First, check verified tabs with creation dates
+        const sortedVerifiedTabs = [...verifiedTabs].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        oldestTab = sortedVerifiedTabs[0];
+        oldestDate = new Date(oldestTab.createdAt);
+      }
+      
+      if (tabsWithExtractableDates.length > 0) {
+        // Then check tabs with extractable dates from URLs
+        const sortedExtractableTabs = [...tabsWithExtractableDates].sort((a, b) => {
+          const dateA = extractDateFromURL(a.url);
+          const dateB = extractDateFromURL(b.url);
+          return dateA - dateB;
+        });
+        
+        const oldestExtractableTab = sortedExtractableTabs[0];
+        const oldestExtractableDate = extractDateFromURL(oldestExtractableTab.url);
+        
+        // Compare with the verified tabs' oldest date
+        if (!oldestDate || oldestExtractableDate < oldestDate) {
+          oldestTab = oldestExtractableTab;
+          oldestDate = oldestExtractableDate;
+        }
+      }
+      
+      // Calculate age in days
       const now = new Date();
-      const ageInDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
+      ageInDays = Math.floor((now - oldestDate) / (1000 * 60 * 60 * 24));
       
       chrome.action.setBadgeText({ text: ageInDays.toString() });
       
@@ -322,33 +352,70 @@ async function checkAndNotifyOldTabs() {
     const threshold = settings.oldTabThreshold || 30; // Default 30 days
     const now = new Date();
     
-    // Find verified tabs older than the threshold
+    // Find tabs older than the threshold (using both creation dates and URL dates)
     const oldTabs = tabs.filter(tab => {
-      // Skip tabs with unknown creation dates or unverified dates
-      if (!tab.createdAt || (tab.isVerified !== undefined && tab.isVerified === false)) {
-        return false;
+      // First check the creation date
+      if (tab.createdAt && (tab.isVerified === undefined || tab.isVerified === true)) {
+        const createdAt = new Date(tab.createdAt);
+        const ageInDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
+        if (ageInDays >= threshold) {
+          return true;
+        }
       }
       
-      const createdAt = new Date(tab.createdAt);
-      const ageInDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
-      return ageInDays >= threshold;
+      // If no valid creation date, try to extract from URL
+      if (tab.url) {
+        const extractedDate = extractDateFromURL(tab.url);
+        if (extractedDate) {
+          const ageInDays = Math.floor((now - extractedDate) / (1000 * 60 * 60 * 24));
+          return ageInDays >= threshold;
+        }
+      }
+      
+      // If no creation date and URL doesn't contain a date, skip the tab
+      return false;
     });
     
     if (oldTabs.length > 0) {
       // Sort by age (oldest first)
-      oldTabs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      oldTabs.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt) : extractDateFromURL(a.url);
+        const dateB = b.createdAt ? new Date(b.createdAt) : extractDateFromURL(b.url);
+        
+        // If both dates are valid, compare them
+        if (dateA && dateB) {
+          return dateA - dateB;
+        }
+        
+        // If only one date is valid, that tab is considered "older"
+        if (dateA) return -1;
+        if (dateB) return 1;
+        
+        // If neither has a valid date, they're equal
+        return 0;
+      });
       
       // Get the oldest tab info for a more detailed message
       const oldestTab = oldTabs[0];
-      const createdAt = new Date(oldestTab.createdAt);
-      const ageInDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
+      let ageInDays;
+      let ageSource;
+      
+      if (oldestTab.createdAt) {
+        const createdAt = new Date(oldestTab.createdAt);
+        ageInDays = Math.floor((now - createdAt) / (1000 * 60 * 60 * 24));
+        ageSource = "tracking data";
+      } else {
+        const extractedDate = extractDateFromURL(oldestTab.url);
+        ageInDays = Math.floor((now - extractedDate) / (1000 * 60 * 60 * 24));
+        ageSource = "URL date";
+      }
       
       // Create a more informative notification
       chrome.notifications.create({
         type: 'basic',
         iconUrl: 'icons/icon128.svg',
         title: 'Old Tabs Detected',
-        message: `You have ${oldTabs.length} tabs that are older than ${threshold} days. The oldest tab "${oldestTab.title.substring(0, 30)}${oldestTab.title.length > 30 ? '...' : ''}" is ${ageInDays} days old.`,
+        message: `You have ${oldTabs.length} tabs that are older than ${threshold} days. The oldest tab "${oldestTab.title.substring(0, 30)}${oldestTab.title.length > 30 ? '...' : ''}" is ${ageInDays} days old (based on ${ageSource}).`,
         contextMessage: 'Click "View Details" to see and manage your old tabs',
         buttons: [
           { title: 'View Details' }

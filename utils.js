@@ -38,11 +38,27 @@ function formatTime(date) {
 /**
  * Calculates the age of a tab based on its creation date
  * @param {string} createdAt - ISO date string of tab creation, or null if unknown
+ * @param {string} url - Tab URL, used to extract date if createdAt is null
  * @returns {Object} Object containing age information
  */
-function calculateTabAge(createdAt) {
-    // If creation date is unknown, return unknown age
-    if (!createdAt) {
+function calculateTabAge(createdAt, url) {
+    let created = null;
+    let fromURL = false;
+    
+    // Try to get creation date from provided timestamp
+    if (createdAt) {
+        created = new Date(createdAt);
+    } 
+    // If no creation date, try to extract from URL
+    else if (url) {
+        created = extractDateFromURL(url);
+        if (created) {
+            fromURL = true;
+        }
+    }
+    
+    // If still no date, return unknown age
+    if (!created) {
         return {
             days: -1,
             weeks: -1,
@@ -50,59 +66,63 @@ function calculateTabAge(createdAt) {
             category: 'unknown',
             label: 'Unknown Age',
             exact: 'Unknown',
-            ageInDays: -1
+            ageInDays: -1,
+            fromURL: false
         };
     }
-  const created = new Date(createdAt);
-  const now = new Date();
-  
-  const diffMs = now - created;
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  const diffWeeks = Math.floor(diffDays / 7);
-  const diffMonths = Math.floor(diffDays / 30);
-  
-  let ageCategory;
-  let ageLabel;
-  
-  if (diffDays < 1) {
-    // Opened Today
-    ageCategory = 'today';
-    ageLabel = 'Today';
-  } else if (diffDays === 1) {
-    // Opened Yesterday
-    ageCategory = 'yesterday';
-    ageLabel = 'Yesterday';
-  } else if (diffDays < 7) {
-    // Open 1-7 Days
-    ageCategory = 'week';
-    ageLabel = `${diffDays} days`;
-  } else if (diffDays < 30) {
-    // Open 8-30 Days
-    ageCategory = 'month';
-    ageLabel = `${diffWeeks} week${diffWeeks === 1 ? '' : 's'}`;
-  } else {
-    // Open >30 Days
-    ageCategory = 'older';
-    ageLabel = `${diffMonths} month${diffMonths === 1 ? '' : 's'}`;
-  }
-  
-  return {
-    days: diffDays,
-    weeks: diffWeeks,
-    months: diffMonths,
-    category: ageCategory,
-    label: ageLabel,
-    exact: formatDate(created)
-  };
+    
+    const now = new Date();
+    
+    const diffMs = now - created;
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    const diffWeeks = Math.floor(diffDays / 7);
+    const diffMonths = Math.floor(diffDays / 30);
+    
+    let ageCategory;
+    let ageLabel;
+    
+    if (diffDays < 1) {
+        // Opened Today
+        ageCategory = 'today';
+        ageLabel = 'Today';
+    } else if (diffDays === 1) {
+        // Opened Yesterday
+        ageCategory = 'yesterday';
+        ageLabel = 'Yesterday';
+    } else if (diffDays < 7) {
+        // Open 1-7 Days
+        ageCategory = 'week';
+        ageLabel = `${diffDays} days`;
+    } else if (diffDays < 30) {
+        // Open 8-30 Days
+        ageCategory = 'month';
+        ageLabel = `${diffWeeks} week${diffWeeks === 1 ? '' : 's'}`;
+    } else {
+        // Open >30 Days
+        ageCategory = 'older';
+        ageLabel = `${diffMonths} month${diffMonths === 1 ? '' : 's'}`;
+    }
+    
+    return {
+        days: diffDays,
+        weeks: diffWeeks,
+        months: diffMonths,
+        category: ageCategory,
+        label: ageLabel,
+        exact: formatDate(created),
+        ageInDays: diffDays,
+        fromURL: fromURL
+    };
 }
 
 /**
  * Generates a color based on the age of a tab
  * @param {string} createdAt - ISO date string of tab creation, or null if unknown
+ * @param {string} url - Tab URL, used to extract date if createdAt is null
  * @returns {string} CSS color value
  */
-function getAgeColor(createdAt) {
-  const { category } = calculateTabAge(createdAt);
+function getAgeColor(createdAt, url) {
+  const { category } = calculateTabAge(createdAt, url);
   
   const colorMap = {
     today: '#2ecc71',      // Green
@@ -157,6 +177,71 @@ function getFaviconFallback(url) {
 }
 
 /**
+ * Extracts a date from URL patterns
+ * @param {string} url - URL to extract date from
+ * @returns {Date|null} Extracted date or null if no date found
+ */
+function extractDateFromURL(url) {
+  if (!url) return null;
+  
+  try {
+    // Pattern: /YYYY/MM/DD/ (e.g., /2024/04/02/)
+    const slashPattern = /\/(\d{4})\/(\d{1,2})\/(\d{1,2})\//;
+    const slashMatch = url.match(slashPattern);
+    if (slashMatch) {
+      const [_, year, month, day] = slashMatch;
+      const extractedDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      if (!isNaN(extractedDate.getTime())) {
+        return extractedDate;
+      }
+    }
+    
+    // Pattern: /YYYY-MM-DD/ or ?date=YYYY-MM-DD
+    const dashPattern = /[\/\?].*?(\d{4}-\d{1,2}-\d{1,2})/;
+    const dashMatch = url.match(dashPattern);
+    if (dashMatch) {
+      const dateStr = dashMatch[1];
+      const extractedDate = new Date(dateStr);
+      if (!isNaN(extractedDate.getTime())) {
+        return extractedDate;
+      }
+    }
+    
+    // Pattern: publication dates for news sites (common formats)
+    const pubDatePattern = /published[=\/](\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/i;
+    const pubMatch = url.match(pubDatePattern);
+    if (pubMatch) {
+      const dateStr = pubMatch[1];
+      // Try dash format (YYYY-MM-DD)
+      if (dateStr.includes('-')) {
+        const extractedDate = new Date(dateStr);
+        if (!isNaN(extractedDate.getTime())) {
+          return extractedDate;
+        }
+      } else {
+        // Try slash format (YYYY/MM/DD)
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          const extractedDate = new Date(
+            parseInt(parts[0]), 
+            parseInt(parts[1]) - 1, 
+            parseInt(parts[2])
+          );
+          if (!isNaN(extractedDate.getTime())) {
+            return extractedDate;
+          }
+        }
+      }
+    }
+    
+    return null;
+  } catch (e) {
+    console.error("Error extracting date from URL:", e);
+    return null;
+  }
+}
+
+/**
  * Export tab data to CSV format
  * @param {Array} tabs - Array of tab objects
  * @returns {string} CSV content
@@ -164,17 +249,18 @@ function getFaviconFallback(url) {
 function exportToCsv(tabs) {
   if (!tabs || !tabs.length) return '';
   
-  const headers = ['Title', 'URL', 'Created At', 'Age (Days)', 'Age Status'];
+  const headers = ['Title', 'URL', 'Created At', 'Age (Days)', 'Age Status', 'Date Source'];
   const rows = [headers];
   
   tabs.forEach(tab => {
-    const age = calculateTabAge(tab.createdAt);
+    const age = calculateTabAge(tab.createdAt, tab.url);
     rows.push([
       `"${(tab.title || '').replace(/"/g, '""')}"`,
       `"${(tab.url || '').replace(/"/g, '""')}"`,
-      `"${tab.createdAt ? formatDate(tab.createdAt) : 'Unknown'}"`,
+      `"${tab.createdAt ? formatDate(tab.createdAt) : (age.fromURL ? formatDate(new Date(Date.now() - age.days * 86400000)) : 'Unknown')}"`,
       `"${age.ageInDays >= 0 ? age.ageInDays : 'Unknown'}"`,
-      `"${age.ageInDays >= 0 ? 'Verified' : 'Unverified'}"`
+      `"${age.ageInDays >= 0 ? 'Verified' : 'Unverified'}"`,
+      `"${age.fromURL ? 'From URL' : (tab.createdAt ? 'Creation Time' : 'Unknown')}"`
     ]);
   });
   
