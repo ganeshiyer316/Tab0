@@ -1,0 +1,23 @@
+# General
+*.log
+*.zip
+.DS_Store
+.env
+venv/
+__pycache__/
+*.pyc
+
+# Replit specific
+.replit
+.breakpoints
+.replit.nix
+
+# Node modules (if any)
+node_modules/
+
+# Ignore any sensitive information
+.env
+config.json
+
+# Keep the latest extension version
+!tab-age-tracker-v1.7.zip
