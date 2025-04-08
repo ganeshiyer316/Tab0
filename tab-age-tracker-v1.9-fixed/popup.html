@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tab Age Tracker</title>
+  <link rel="stylesheet" href="popup.css">
+  <!-- Chart.js will be loaded at the end of the body -->
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Tab Age Tracker</h1>
+      <div class="tab-count">
+        <span id="tabCount">0</span> tabs open
+      </div>
+    </header>
+    
+    <div class="search-container">
+      <input type="text" id="searchInput" placeholder="Search tabs by title, URL or domain...">
+      <button id="clearSearch" class="clear-button" title="Clear search">&times;</button>
+    </div>
+
+    <div class="stats-overview">
+      <div class="stat-card">
+        <div class="stat-title">Opened Today</div>
+        <div class="stat-value" id="todayCount">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Open 1-7 Days</div>
+        <div class="stat-value" id="weekCount">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Open 8-30 Days</div>
+        <div class="stat-value" id="monthCount">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Open >30 Days</div>
+        <div class="stat-value" id="olderCount">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-title">Unknown Age</div>
+        <div class="stat-value" id="unknownCount">0</div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="ageDistributionChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <canvas id="trendChart"></canvas>
+    </div>
+
+    <div class="actions">
+      <button id="viewDetailsInDashboard" class="primary-button">View Details in Web Dashboard</button>
+    </div>
+
+    <div class="progress-container">
+      <h3>Progress to Tab Zero</h3>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-text">
+        <span id="progressPercent">0%</span> complete
+      </div>
+      <div class="progress-info">
+        Peak: <span id="peakTabs">0</span> tabs
+      </div>
+    </div>
+    
+    <div class="info-container">
+      <h3>About Tab Age</h3>
+      <p>Tabs are categorized by age to help you identify which ones you've been keeping open for too long.</p>
+      <ul>
+        <li><span class="tag today">Opened Today</span> - Opened in the last 24 hours</li>
+        <li><span class="tag week">Open 1-7 Days</span> - Opened between 1-7 days ago</li>
+        <li><span class="tag month">Open 8-30 Days</span> - Opened between 8-30 days ago</li>
+        <li><span class="tag older">Open >30 Days</span> - Opened more than 30 days ago</li>
+        <li><span class="tag unknown">Unknown Age</span> - Tabs that existed before extension installation</li>
+      </ul>
+      <p class="info-note">For accuracy, tabs that existed before the extension was installed are marked as "Unknown Age". Only new tabs opened after installation have verified age data.</p>
+    </div>
+  </div>
+
+  <script src="chart.js"></script>
+  <script src="utils.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
