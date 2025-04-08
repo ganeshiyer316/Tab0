@@ -865,7 +865,12 @@ function openWebDashboard() {
     chrome.storage.local.get(['settings'], (settingsData) => {
       const settings = settingsData.settings || {};
       const useServerDashboard = settings.useServerDashboard || false;
-      const serverUrl = settings.serverUrl || 'https://tab-age-tracker.replit.app';
+      let serverUrl = settings.serverUrl || 'https://tab-age-tracker.replit.app';
+      
+      // Ensure the serverUrl ends with a trailing slash for consistent URL building
+      if (serverUrl && !serverUrl.endsWith('/')) {
+        serverUrl += '/';
+      }
       
       if (useServerDashboard) {
         // Use the server dashboard
@@ -934,7 +939,12 @@ function openWebDashboardWithSearch(searchQuery) {
     chrome.storage.local.get(['settings'], (settingsData) => {
       const settings = settingsData.settings || {};
       const useServerDashboard = settings.useServerDashboard || false;
-      const serverUrl = settings.serverUrl || 'https://tab-age-tracker.replit.app';
+      let serverUrl = settings.serverUrl || 'https://tab-age-tracker.replit.app';
+      
+      // Ensure the serverUrl ends with a trailing slash for consistent URL building
+      if (serverUrl && !serverUrl.endsWith('/')) {
+        serverUrl += '/';
+      }
       
       // Reset search input state after a short delay
       setTimeout(() => {
