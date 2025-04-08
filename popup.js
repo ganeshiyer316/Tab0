@@ -40,15 +40,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTrendChart(tabData);
   }
   
-  // Set up event listeners
-  viewDetailsButton.addEventListener('click', openDetailView);
-  openOptionsButton.addEventListener('click', openOptionsPage);
-  document.getElementById('checkOldTabs').addEventListener('click', checkForOldTabs);
+  // Set up event listeners for the combined dashboard button
+  const viewDetailsInDashboardButton = document.getElementById('viewDetailsInDashboard');
+  if (viewDetailsInDashboardButton) {
+    viewDetailsInDashboardButton.addEventListener('click', openWebDashboard);
+  }
   
-  // Add event listener for the web dashboard button if it exists
-  const webDashboardButton = document.getElementById('webDashboard');
-  if (webDashboardButton) {
-    webDashboardButton.addEventListener('click', openWebDashboard);
+  // Set up search functionality
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    searchInput.addEventListener('input', function() {
+      searchTabs(this.value);
+    });
   }
   
   // Update the data (this will gather fresh data and update storage)
@@ -565,6 +568,76 @@ function openWebDashboard() {
 }
 
 // Function to check for old tabs
+/**
+ * Search tabs by title or URL
+ * @param {string} query - The search query
+ */
+function searchTabs(query) {
+  if (!query) {
+    return;
+  }
+  
+  chrome.storage.local.get(['tabData'], (result) => {
+    const tabData = result.tabData || { tabs: [] };
+    const tabs = tabData.tabs || [];
+    
+    // Filter tabs by query
+    const matchingTabs = tabs.filter(tab => {
+      const title = tab.title || '';
+      const url = tab.url || '';
+      const lowerQuery = query.toLowerCase();
+      
+      return title.toLowerCase().includes(lowerQuery) || url.toLowerCase().includes(lowerQuery);
+    });
+    
+    if (matchingTabs.length > 0) {
+      // Open the dashboard with a search filter
+      openWebDashboardWithSearch(query);
+    } else {
+      showNotification('No tabs found matching your search query.');
+    }
+  });
+}
+
+/**
+ * Open the Web Dashboard with a search filter applied
+ * @param {string} searchQuery - The search query to apply
+ */
+function openWebDashboardWithSearch(searchQuery) {
+  // Get current data
+  chrome.storage.local.get(['tabData', 'tabHistory', 'peakTabCount'], (data) => {
+    // Check if we should use the server dashboard
+    chrome.storage.local.get(['settings'], (settingsData) => {
+      const settings = settingsData.settings || {};
+      const useServerDashboard = settings.useServerDashboard || false;
+      const serverUrl = settings.serverUrl || 'https://tab-age-tracker.replit.app';
+      
+      if (useServerDashboard) {
+        // Use the server dashboard with search parameter
+        chrome.tabs.create({ url: `${serverUrl}?search=${encodeURIComponent(searchQuery)}` });
+        
+        // Sync data with the server
+        chrome.runtime.sendMessage({ action: 'syncData' });
+      } else {
+        // Convert the data to a base64 string
+        const dataString = JSON.stringify(data);
+        const encodedData = btoa(encodeURIComponent(dataString));
+        
+        // The dashboard.html is in the root directory
+        let dashboardUrl = chrome.runtime.getURL(`/dashboard.html?data=${encodedData}&search=${encodeURIComponent(searchQuery)}`);
+        
+        // Add server URL to parameters if available
+        if (settings.serverUrl) {
+          dashboardUrl += `&serverUrl=${encodeURIComponent(settings.serverUrl)}`;
+        }
+        
+        // Open the local web dashboard in a new tab with the data and search parameter
+        chrome.tabs.create({ url: dashboardUrl });
+      }
+    });
+  });
+}
+
 function checkForOldTabs() {
   // Show a loading state on the button
   const button = document.getElementById('checkOldTabs');

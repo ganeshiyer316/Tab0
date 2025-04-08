@@ -17,10 +17,24 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeCharts();
     
     // Add event listeners
-    document.getElementById('importBtn').addEventListener('click', importData);
-    document.getElementById('searchInput').addEventListener('input', filterTabs);
-    document.getElementById('categoryFilter').addEventListener('change', filterTabs);
-    document.getElementById('sortOption').addEventListener('change', filterTabs);
+    document.getElementById('importBtn')?.addEventListener('click', importData);
+    document.getElementById('searchInput')?.addEventListener('input', filterTabs);
+    document.getElementById('categoryFilter')?.addEventListener('change', filterTabs);
+    document.getElementById('sortOption')?.addEventListener('change', filterTabs);
+    
+    // Check for search parameter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchQuery = urlParams.get('search');
+    
+    if (searchQuery) {
+        // Set the search input field value
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.value = searchQuery;
+            // Trigger the search filter
+            filterTabs();
+        }
+    }
 });
 
 /**
