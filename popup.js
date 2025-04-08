@@ -49,8 +49,41 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Set up search functionality
   const searchInput = document.getElementById('searchInput');
   if (searchInput) {
+    // Add immediate search when typing
     searchInput.addEventListener('input', function() {
-      searchTabs(this.value);
+      if (this.value.trim().length > 2) {
+        searchTabs(this.value);
+      }
+    });
+    
+    // Add search on enter key press
+    searchInput.addEventListener('keypress', function(e) {
+      if (e.key === 'Enter' && this.value.trim().length > 0) {
+        searchTabs(this.value);
+        e.preventDefault();
+      }
+    });
+    
+    // Add clear button functionality
+    const clearButton = document.createElement('button');
+    clearButton.innerText = '×';
+    clearButton.className = 'search-clear-button';
+    clearButton.style.display = 'none';
+    clearButton.title = 'Clear search';
+    
+    // Insert clear button after search input
+    searchInput.parentNode.style.position = 'relative';
+    searchInput.parentNode.appendChild(clearButton);
+    
+    // Show/hide clear button based on search input
+    searchInput.addEventListener('input', function() {
+      clearButton.style.display = this.value ? 'block' : 'none';
+    });
+    
+    // Clear search when button is clicked
+    clearButton.addEventListener('click', function() {
+      searchInput.value = '';
+      clearButton.style.display = 'none';
     });
   }
   
@@ -573,7 +606,9 @@ function openWebDashboard() {
  * @param {string} query - The search query
  */
 function searchTabs(query) {
-  if (!query) {
+  // Trim the query and check if it's empty
+  const trimmedQuery = query?.trim();
+  if (!trimmedQuery) {
     return;
   }
   
@@ -582,17 +617,30 @@ function searchTabs(query) {
     const tabs = tabData.tabs || [];
     
     // Filter tabs by query
+    const lowerQuery = trimmedQuery.toLowerCase();
     const matchingTabs = tabs.filter(tab => {
       const title = tab.title || '';
       const url = tab.url || '';
-      const lowerQuery = query.toLowerCase();
       
-      return title.toLowerCase().includes(lowerQuery) || url.toLowerCase().includes(lowerQuery);
+      // Create a domain-only version for domain-specific searches
+      let domain = '';
+      try {
+        domain = new URL(url).hostname;
+      } catch (e) {
+        // URL parsing failed, use the full URL
+      }
+      
+      return title.toLowerCase().includes(lowerQuery) || 
+             url.toLowerCase().includes(lowerQuery) || 
+             domain.toLowerCase().includes(lowerQuery);
     });
     
     if (matchingTabs.length > 0) {
+      // Show a notification with the match count
+      showNotification(`Found ${matchingTabs.length} matching tab${matchingTabs.length > 1 ? 's' : ''}. Opening dashboard...`);
+      
       // Open the dashboard with a search filter
-      openWebDashboardWithSearch(query);
+      openWebDashboardWithSearch(trimmedQuery);
     } else {
       showNotification('No tabs found matching your search query.');
     }
@@ -604,6 +652,18 @@ function searchTabs(query) {
  * @param {string} searchQuery - The search query to apply
  */
 function openWebDashboardWithSearch(searchQuery) {
+  // Show loading state to user
+  const searchInput = document.getElementById('searchInput');
+  const originalPlaceholder = searchInput ? searchInput.placeholder : '';
+  
+  if (searchInput) {
+    searchInput.placeholder = 'Opening dashboard...';
+    searchInput.disabled = true;
+  }
+  
+  // Show a notification about opening dashboard with search
+  showNotification(`Opening dashboard with search: "${searchQuery}"`);
+  
   // Get current data
   chrome.storage.local.get(['tabData', 'tabHistory', 'peakTabCount'], (data) => {
     // Check if we should use the server dashboard
@@ -611,6 +671,14 @@ function openWebDashboardWithSearch(searchQuery) {
       const settings = settingsData.settings || {};
       const useServerDashboard = settings.useServerDashboard || false;
       const serverUrl = settings.serverUrl || 'https://tab-age-tracker.replit.app';
+      
+      // Reset search input state after a short delay
+      setTimeout(() => {
+        if (searchInput) {
+          searchInput.placeholder = originalPlaceholder;
+          searchInput.disabled = false;
+        }
+      }, 1500);
       
       if (useServerDashboard) {
         // Use the server dashboard with search parameter

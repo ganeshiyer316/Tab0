@@ -232,20 +232,28 @@
         
         <h2>Current Tabs</h2>
         <p>Search and filter your tabs:</p>
-        <input type="text" id="searchInput" placeholder="Search by title or URL" style="padding: 8px; width: 300px; margin-right: 10px;">
-        <select id="categoryFilter" style="padding: 8px; margin-right: 10px;">
-            <option value="all">All Tabs</option>
-            <option value="today">Today</option>
-            <option value="week">This Week</option>
-            <option value="month">This Month</option>
-            <option value="older">Older</option>
-            <option value="unknown">Unknown Age</option>
-        </select>
-        <select id="sortOption" style="padding: 8px;">
-            <option value="age-desc">Oldest First</option>
-            <option value="age-asc">Newest First</option>
-            <option value="title">By Title</option>
-        </select>
+        <div class="search-filter-container" style="display: flex; margin-bottom: 15px; align-items: center; flex-wrap: wrap;">
+            <div class="search-box" style="position: relative; margin-right: 15px; margin-bottom: 10px; flex: 1;">
+                <input type="text" id="searchInput" placeholder="Search by title, URL or domain" style="padding: 10px; width: 100%; min-width: 250px; border-radius: 4px; border: 1px solid #ccc;">
+                <button id="clearSearch" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #999; cursor: pointer; display: none;">✕</button>
+            </div>
+            <div style="display: flex; flex-wrap: wrap;">
+                <select id="categoryFilter" style="padding: 8px; margin-right: 10px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="all">All Categories</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="older">Older</option>
+                    <option value="unknown">Unknown Age</option>
+                </select>
+                <select id="sortOption" style="padding: 8px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="age-desc">Oldest First</option>
+                    <option value="age-asc">Newest First</option>
+                    <option value="title">By Title</option>
+                </select>
+            </div>
+        </div>
+        <div id="searchStatus" style="margin-bottom: 15px; color: #555; font-style: italic; display: none;"></div>
         
         <table class="tabs-table" id="tabs-table">
             <thead>

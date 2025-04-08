@@ -902,10 +902,11 @@ function populateTabsTable() {
  * Filter tabs based on search input and category filter
  */
 function filterTabs() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
     const categoryFilter = document.getElementById('categoryFilter').value;
     const sortOption = document.getElementById('sortOption').value;
     const tableBody = document.getElementById('tabsList') || document.querySelector('#tabs-table tbody');
+    const searchStatusElem = document.getElementById('searchStatus');
     
     if (!tableBody) return; // Exit if no table body found
     
@@ -913,6 +914,12 @@ function filterTabs() {
     let rows = Array.from(tableBody.getElementsByTagName('tr'));
     if (rows.length === 1 && rows[0].cells.length === 1 && rows[0].cells[0].colSpan === 4) {
         return; // Only has a "no data" row, nothing to filter
+    }
+    
+    // Reset search status
+    if (searchStatusElem) {
+        searchStatusElem.textContent = '';
+        searchStatusElem.style.display = 'none';
     }
     
     // Create a new array with row data for sorting
@@ -931,7 +938,31 @@ function filterTabs() {
         const url = urlCell.textContent.toLowerCase();
         const categoryText = ageCell.textContent.toLowerCase();
         
-        const matchesSearch = title.includes(searchTerm) || url.includes(searchTerm);
+        // Extract domain for more accurate searching
+        let domain = '';
+        try {
+            if (url.includes('://')) {
+                domain = new URL(url).hostname.toLowerCase();
+            }
+        } catch (e) {
+            // URL parsing failed, use the full URL
+        }
+        
+        let matchesSearch = true;
+        
+        if (searchTerm) {
+            // Split search into words for AND search (all words must match somewhere)
+            const searchWords = searchTerm.split(/\s+/).filter(word => word.length > 0);
+            
+            if (searchWords.length > 0) {
+                matchesSearch = searchWords.every(word => 
+                    title.includes(word) || 
+                    url.includes(word) || 
+                    domain.includes(word)
+                );
+            }
+        }
+        
         const matchesCategory = categoryFilter === 'all' || 
             (categoryFilter === 'today' && categoryText.includes('today')) ||
             (categoryFilter === 'week' && (categoryText.includes('day') || categoryText.includes('week'))) ||
@@ -943,6 +974,8 @@ function filterTabs() {
         rowsData.push({
             row: row,
             title: title,
+            url: url,
+            domain: domain,
             createdDate: createdCell.textContent,
             visible: matchesSearch && matchesCategory
         });
@@ -976,10 +1009,39 @@ function filterTabs() {
     // Reattach sorted rows to the table with appropriate visibility
     tableBody.innerHTML = ''; // Clear table body
     
-    // Check if there are any visible rows
-    const hasVisibleRows = rowsData.some(data => data.visible);
+    // Count visible rows and update search status
+    const visibleRows = rowsData.filter(data => data.visible).length;
+    const totalRows = rowsData.length;
     
-    if (!hasVisibleRows) {
+    // Update clear button visibility
+    const searchInput = document.getElementById('searchInput');
+    const clearButton = document.getElementById('clearSearch');
+    
+    if (clearButton) {
+        clearButton.style.display = searchTerm ? 'block' : 'none';
+        
+        // Set up clear button if not already done
+        if (!clearButton.hasAttribute('data-initialized')) {
+            clearButton.setAttribute('data-initialized', 'true');
+            clearButton.addEventListener('click', function() {
+                searchInput.value = '';
+                clearButton.style.display = 'none';
+                filterTabs();
+            });
+        }
+    }
+    
+    // Update search status
+    if (searchStatusElem) {
+        if (searchTerm) {
+            searchStatusElem.textContent = `Found ${visibleRows} matching tab${visibleRows !== 1 ? 's' : ''} out of ${totalRows} total`;
+            searchStatusElem.style.display = 'block';
+        } else {
+            searchStatusElem.style.display = 'none';
+        }
+    }
+    
+    if (visibleRows === 0) {
         // Create a "no results" row
         const noDataRow = document.createElement('tr');
         const noDataCell = document.createElement('td');
