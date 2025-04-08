@@ -1,4 +1,4 @@
-# Tab Age Tracker - Chrome Extension
+# Tab0 - Tab Age Tracker Chrome Extension
 
 A Chrome extension that provides intelligent tab management through advanced analytics, user-friendly visualizations, and interactive features to help users reduce digital clutter and reach "tab zero".
 
@@ -22,7 +22,7 @@ A Chrome extension that provides intelligent tab management through advanced ana
 ## Installation
 
 ### For Beta Testers
-1. Download the extension zip file from the [releases page](https://github.com/yourusername/tab-age-tracker/releases)
+1. Download the extension zip file from the [releases page](https://github.com/ganeshiyer316/Tab0/releases)
 2. Extract the zip file to a folder on your computer
 3. Open Chrome and navigate to `chrome://extensions`
 4. Enable "Developer mode" by toggling the switch in the top right corner
