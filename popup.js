@@ -1,94 +1,131 @@
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('DOMContentLoaded event fired');
-  console.log('Chart library available:', typeof Chart !== 'undefined');
-  // Get references to DOM elements
-  const tabCountElement = document.getElementById('tabCount');
-  const todayCountElement = document.getElementById('todayCount');
-  const weekCountElement = document.getElementById('weekCount');
-  const monthCountElement = document.getElementById('monthCount');
-  const olderCountElement = document.getElementById('olderCount');
-  const progressBarElement = document.getElementById('progressBar');
-  const progressPercentElement = document.getElementById('progressPercent');
-  const peakTabsElement = document.getElementById('peakTabs');
-  
-  const viewDetailsButton = document.getElementById('viewDetails');
-  const openOptionsButton = document.getElementById('openOptions');
-
-  // Load the latest tab data
-  const tabData = await loadTabData();
-  
-  // Update the UI with the tab data
-  updateTabCounts(tabData);
-  updateProgressBar(tabData);
-  
-  // Check if Chart is available
-  if (typeof Chart === 'undefined') {
-    console.error('Chart.js library not loaded properly');
-    // Add fallback text for chart containers
-    document.querySelectorAll('.chart-container').forEach(container => {
-      const messageDiv = document.createElement('div');
-      messageDiv.textContent = 'Chart visualization unavailable';
-      messageDiv.style.textAlign = 'center';
-      messageDiv.style.padding = '20px';
-      messageDiv.style.color = '#999';
-      container.appendChild(messageDiv);
-    });
-  } else {
-    console.log('Chart.js loaded successfully, initializing charts');
-    // Initialize charts
-    initAgeDistributionChart(tabData);
-    initTrendChart(tabData);
-  }
-  
-  // Set up event listeners for the combined dashboard button
-  const viewDetailsInDashboardButton = document.getElementById('viewDetailsInDashboard');
-  if (viewDetailsInDashboardButton) {
-    viewDetailsInDashboardButton.addEventListener('click', openWebDashboard);
-  }
-  
-  // Set up search functionality
-  const searchInput = document.getElementById('searchInput');
-  if (searchInput) {
-    // Add immediate search when typing
-    searchInput.addEventListener('input', function() {
-      if (this.value.trim().length > 2) {
-        searchTabs(this.value);
+  try {
+    console.log('DOMContentLoaded event fired');
+    
+    // Check if Chart.js is available
+    const isChartAvailable = typeof Chart !== 'undefined';
+    console.log('Chart library available:', isChartAvailable);
+    
+    // Safely get DOM elements (with null checks)
+    const getElement = (id) => {
+      const element = document.getElementById(id);
+      if (!element) {
+        console.warn(`Element with ID '${id}' not found in the DOM`);
       }
-    });
+      return element;
+    };
     
-    // Add search on enter key press
-    searchInput.addEventListener('keypress', function(e) {
-      if (e.key === 'Enter' && this.value.trim().length > 0) {
-        searchTabs(this.value);
-        e.preventDefault();
+    // Get references to DOM elements
+    const tabCountElement = getElement('tabCount');
+    const todayCountElement = getElement('todayCount');
+    const weekCountElement = getElement('weekCount');
+    const monthCountElement = getElement('monthCount');
+    const olderCountElement = getElement('olderCount');
+    const progressBarElement = getElement('progressBar');
+    const progressPercentElement = getElement('progressPercent');
+    const peakTabsElement = getElement('peakTabs');
+    
+    // Load the latest tab data
+    const tabData = await loadTabData();
+    
+    // Update the UI with the tab data (only if elements exist)
+    if (tabCountElement && todayCountElement && weekCountElement && 
+        monthCountElement && olderCountElement) {
+      updateTabCounts(tabData);
+    }
+    
+    if (progressBarElement && progressPercentElement && peakTabsElement) {
+      updateProgressBar(tabData);
+    }
+    
+    // Handle Chart.js availability
+    if (!isChartAvailable) {
+      console.error('Chart.js library not loaded properly');
+      // Add fallback text for chart containers
+      document.querySelectorAll('.chart-container').forEach(container => {
+        if (!container.querySelector('.chart-error-message')) {
+          const messageDiv = document.createElement('div');
+          messageDiv.className = 'chart-error-message';
+          messageDiv.textContent = 'Chart visualization unavailable';
+          messageDiv.style.textAlign = 'center';
+          messageDiv.style.padding = '20px';
+          messageDiv.style.color = '#999';
+          container.appendChild(messageDiv);
+        }
+      });
+    } else {
+      console.log('Chart.js loaded successfully, initializing charts');
+      try {
+        // Initialize charts with proper error handling
+        initAgeDistributionChart(tabData);
+        initTrendChart(tabData);
+      } catch (chartError) {
+        console.error('Error initializing charts:', chartError);
       }
-    });
+    }
     
-    // Add clear button functionality
-    const clearButton = document.createElement('button');
-    clearButton.innerText = '×';
-    clearButton.className = 'search-clear-button';
-    clearButton.style.display = 'none';
-    clearButton.title = 'Clear search';
+    // Set up event listeners for the combined dashboard button
+    const viewDetailsInDashboardButton = getElement('viewDetailsInDashboard');
+    if (viewDetailsInDashboardButton) {
+      viewDetailsInDashboardButton.addEventListener('click', openWebDashboard);
+    }
     
-    // Insert clear button after search input
-    searchInput.parentNode.style.position = 'relative';
-    searchInput.parentNode.appendChild(clearButton);
+    // Set up search functionality
+    const searchInput = getElement('searchInput');
+    if (searchInput) {
+      // Add immediate search when typing
+      searchInput.addEventListener('input', function() {
+        if (this.value.trim().length > 2) {
+          searchTabs(this.value);
+        }
+      });
+      
+      // Add search on enter key press
+      searchInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && this.value.trim().length > 0) {
+          searchTabs(this.value);
+          e.preventDefault();
+        }
+      });
+      
+      // Add clear button functionality
+      try {
+        const clearButton = document.createElement('button');
+        clearButton.innerText = '×';
+        clearButton.className = 'search-clear-button';
+        clearButton.style.display = 'none';
+        clearButton.title = 'Clear search';
+        
+        // Insert clear button after search input
+        if (searchInput.parentNode) {
+          searchInput.parentNode.style.position = 'relative';
+          searchInput.parentNode.appendChild(clearButton);
+          
+          // Show/hide clear button based on search input
+          searchInput.addEventListener('input', function() {
+            clearButton.style.display = this.value ? 'block' : 'none';
+          });
+          
+          // Clear search when button is clicked
+          clearButton.addEventListener('click', function() {
+            searchInput.value = '';
+            clearButton.style.display = 'none';
+          });
+        }
+      } catch (clearButtonError) {
+        console.error('Error setting up clear button:', clearButtonError);
+      }
+    }
     
-    // Show/hide clear button based on search input
-    searchInput.addEventListener('input', function() {
-      clearButton.style.display = this.value ? 'block' : 'none';
-    });
-    
-    // Clear search when button is clicked
-    clearButton.addEventListener('click', function() {
-      searchInput.value = '';
-      clearButton.style.display = 'none';
-    });
+    // Update the data (this will gather fresh data and update storage)
+    try {
+      await updateTabData();
+    } catch (updateError) {
+      console.error('Error updating tab data:', updateError);
+    }
+  } catch (error) {
+    console.error('Error in popup initialization:', error);
   }
-  
-  // Update the data (this will gather fresh data and update storage)
-  await updateTabData();
 });
 
 async function loadTabData() {
@@ -187,368 +224,631 @@ async function updateTabData() {
 }
 
 function updateTabCounts(data) {
-  const { tabData } = data;
-  const tabs = tabData.tabs || [];
-  
-  // Count tabs by age
-  const now = new Date();
-  const oneDay = 24 * 60 * 60 * 1000;
-  const oneWeek = 7 * oneDay;
-  const oneMonth = 30 * oneDay;
-  
-  let todayCount = 0;
-  let weekCount = 0;
-  let monthCount = 0;
-  let olderCount = 0;
-  let unknownCount = 0;
-  
-  tabs.forEach(tab => {
-    // Skip tabs with unknown creation dates
-    if (!tab.createdAt) {
-      unknownCount++;
+  try {
+    if (!data || !data.tabData) {
+      console.error('Invalid data provided to updateTabCounts');
       return;
     }
     
-    // Skip unverified tabs
-    if (tab.hasOwnProperty('isVerified') && tab.isVerified === false) {
-      unknownCount++;
-      return;
-    }
+    const { tabData } = data;
+    const tabs = tabData.tabs || [];
     
-    const createdAt = new Date(tab.createdAt);
-    const age = now - createdAt;
+    // Count tabs by age
+    const now = new Date();
+    const oneDay = 24 * 60 * 60 * 1000;
+    const oneWeek = 7 * oneDay;
+    const oneMonth = 30 * oneDay;
     
-    if (age < oneDay) {
-      todayCount++;
-    } else if (age < oneWeek) {
-      weekCount++;
-    } else if (age < oneMonth) {
-      monthCount++;
-    } else {
-      olderCount++;
-    }
-  });
-  
-  // Update UI elements
-  document.getElementById('tabCount').textContent = tabs.length;
-  document.getElementById('todayCount').textContent = todayCount;
-  document.getElementById('weekCount').textContent = weekCount;
-  document.getElementById('monthCount').textContent = monthCount;
-  document.getElementById('olderCount').textContent = olderCount;
-  
-  // Update unknown count - always update this since the element should always exist now
-  const unknownElement = document.getElementById('unknownCount');
-  if (unknownElement) {
-    unknownElement.textContent = unknownCount;
+    let todayCount = 0;
+    let weekCount = 0;
+    let monthCount = 0;
+    let olderCount = 0;
+    let unknownCount = 0;
+    
+    tabs.forEach(tab => {
+      try {
+        // Skip tabs with unknown creation dates
+        if (!tab.createdAt) {
+          unknownCount++;
+          return;
+        }
+        
+        // Skip unverified tabs
+        if (tab.hasOwnProperty('isVerified') && tab.isVerified === false) {
+          unknownCount++;
+          return;
+        }
+        
+        const createdAt = new Date(tab.createdAt);
+        
+        // Check if the date is valid
+        if (isNaN(createdAt.getTime())) {
+          console.warn('Invalid date format:', tab.createdAt);
+          unknownCount++;
+          return;
+        }
+        
+        const age = now - createdAt;
+        
+        if (age < oneDay) {
+          todayCount++;
+        } else if (age < oneWeek) {
+          weekCount++;
+        } else if (age < oneMonth) {
+          monthCount++;
+        } else {
+          olderCount++;
+        }
+      } catch (tabError) {
+        console.error('Error processing tab:', tabError);
+        unknownCount++;
+      }
+    });
+    
+    // Safely update UI elements with null checks
+    const safelyUpdateElement = (id, value) => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.textContent = value;
+      } else {
+        console.warn(`Element with ID '${id}' not found`);
+      }
+    };
+    
+    safelyUpdateElement('tabCount', tabs.length);
+    safelyUpdateElement('todayCount', todayCount);
+    safelyUpdateElement('weekCount', weekCount);
+    safelyUpdateElement('monthCount', monthCount);
+    safelyUpdateElement('olderCount', olderCount);
+    safelyUpdateElement('unknownCount', unknownCount);
+    
+  } catch (error) {
+    console.error('Error in updateTabCounts:', error);
   }
 }
 
 function updateProgressBar(data) {
-  const { tabData, peakTabCount } = data;
-  const currentCount = tabData.tabs?.length || 0;
-  
-  // Calculate progress as percentage of reduction from peak
-  const progressPercent = peakTabCount === 0 ? 100 : Math.max(0, Math.min(100, ((peakTabCount - currentCount) / peakTabCount) * 100));
-  
-  // Update UI elements
-  document.getElementById('progressBar').style.width = `${progressPercent}%`;
-  document.getElementById('progressPercent').textContent = `${Math.round(progressPercent)}%`;
-  document.getElementById('peakTabs').textContent = peakTabCount;
+  try {
+    if (!data || !data.tabData) {
+      console.error('Invalid data provided to updateProgressBar');
+      return;
+    }
+    
+    const { tabData, peakTabCount = 0 } = data;
+    const currentCount = tabData.tabs?.length || 0;
+    
+    // Calculate progress as percentage of reduction from peak
+    const progressPercent = peakTabCount === 0 ? 100 : Math.max(0, Math.min(100, ((peakTabCount - currentCount) / peakTabCount) * 100));
+    
+    // Safely update UI elements with null checks
+    const progressBar = document.getElementById('progressBar');
+    const progressPercent_el = document.getElementById('progressPercent');
+    const peakTabs_el = document.getElementById('peakTabs');
+    
+    if (progressBar) {
+      progressBar.style.width = `${progressPercent}%`;
+    } else {
+      console.warn('Progress bar element not found');
+    }
+    
+    if (progressPercent_el) {
+      progressPercent_el.textContent = `${Math.round(progressPercent)}%`;
+    } else {
+      console.warn('Progress percent element not found');
+    }
+    
+    if (peakTabs_el) {
+      peakTabs_el.textContent = peakTabCount;
+    } else {
+      console.warn('Peak tabs element not found');
+    }
+  } catch (error) {
+    console.error('Error in updateProgressBar:', error);
+  }
 }
 
 function initAgeDistributionChart(data) {
-  // Check if Chart is available
-  if (typeof Chart === 'undefined') {
-    console.error('Chart.js library not loaded properly');
-    // Add fallback text for chart containers
-    document.querySelectorAll('.chart-container').forEach(container => {
-      // Only add the message if it doesn't already exist
-      if (!container.querySelector('.chart-error-message')) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = 'chart-error-message';
-        messageDiv.textContent = 'Chart visualization unavailable';
-        messageDiv.style.textAlign = 'center';
-        messageDiv.style.padding = '20px';
-        messageDiv.style.color = '#999';
-        container.appendChild(messageDiv);
-      }
-    });
-    return;
-  }
-  
-  const { tabData } = data;
-  const tabs = tabData.tabs || [];
-  
-  // Prepare data for the chart
-  const now = new Date();
-  const oneDay = 24 * 60 * 60 * 1000;
-  const oneWeek = 7 * oneDay;
-  const oneMonth = 30 * oneDay;
-  
-  let todayCount = 0;
-  let weekCount = 0; 
-  let monthCount = 0;
-  let olderCount = 0;
-  let unknownCount = 0;
-  
-  tabs.forEach(tab => {
-    // Skip tabs with unknown creation dates or unverified dates
-    if (!tab.createdAt) {
-      unknownCount++;
+  try {
+    // Check if data is valid
+    if (!data || !data.tabData) {
+      console.error('Invalid data provided to initAgeDistributionChart');
       return;
     }
-    
-    // Skip unverified tabs if the isVerified flag is explicitly set to false
-    if (tab.hasOwnProperty('isVerified') && tab.isVerified === false) {
-      unknownCount++;
-      return;
-    }
-    
-    const createdAt = new Date(tab.createdAt);
-    const age = now - createdAt;
-    
-    if (age < oneDay) {
-      todayCount++;
-    } else if (age < oneWeek) {
-      weekCount++;
-    } else if (age < oneMonth) {
-      monthCount++;
-    } else {
-      olderCount++;
-    }
-  });
-  
-  // Create or update the chart
-  const ctx = document.getElementById('ageDistributionChart').getContext('2d');
-  
-  // Prepare datasets with labels
-  const chartData = {
-    labels: ['Opened Today', 'Open 1-7 Days', 'Open 8-30 Days', 'Open >30 Days', 'Unknown Age'],
-    datasets: [{
-      data: [todayCount, weekCount, monthCount, olderCount, unknownCount],
-      backgroundColor: ['#2ecc71', '#3498db', '#f39c12', '#e74c3c', '#95a5a6'],
-      borderWidth: 0
-    }]
-  };
-  
-  // Only show categories that have data
-  const filteredLabels = [];
-  const filteredData = [];
-  const filteredColors = [];
-  
-  chartData.labels.forEach((label, index) => {
-    if (chartData.datasets[0].data[index] > 0) {
-      filteredLabels.push(label);
-      filteredData.push(chartData.datasets[0].data[index]);
-      filteredColors.push(chartData.datasets[0].backgroundColor[index]);
-    }
-  });
-  
-  // Check if chart already exists
-  if (window.ageDistributionChart && window.ageDistributionChart.data) {
-    // Ensure chart data structure exists before updating
-    if (!window.ageDistributionChart.data.datasets || window.ageDistributionChart.data.datasets.length === 0) {
-      window.ageDistributionChart.data.datasets = [{}];
-    }
-    window.ageDistributionChart.data.labels = filteredLabels;
-    window.ageDistributionChart.data.datasets[0].data = filteredData;
-    window.ageDistributionChart.data.datasets[0].backgroundColor = filteredColors;
-    window.ageDistributionChart.update();
-  } else {
-    // Only create the chart if we have data to show
-    if (todayCount + weekCount + monthCount + olderCount + unknownCount > 0) {
-      window.ageDistributionChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: filteredLabels,
-          datasets: [{
-            data: filteredData,
-            backgroundColor: filteredColors,
-            borderWidth: 0
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              position: 'bottom',
-              labels: {
-                boxWidth: 12,
-                padding: 10
-              }
-            },
-            title: {
-              display: true,
-              text: 'Tab Age Distribution',
-              font: {
-                size: 14
-              }
-            },
-            tooltip: {
-              callbacks: {
-                label: function(context) {
-                  const label = context.label || '';
-                  const value = context.raw || 0;
-                  const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
-                  const percentage = Math.round((value / total) * 100);
-                  return `${label}: ${value} tabs (${percentage}%)`;
-                }
-              }
-            }
-          },
-          cutout: '50%'
+
+    // Check if Chart is available
+    if (typeof Chart === 'undefined') {
+      console.error('Chart.js library not loaded properly');
+      // Add fallback text for chart containers
+      document.querySelectorAll('.chart-container').forEach(container => {
+        // Only add the message if it doesn't already exist
+        if (!container.querySelector('.chart-error-message')) {
+          const messageDiv = document.createElement('div');
+          messageDiv.className = 'chart-error-message';
+          messageDiv.textContent = 'Chart visualization unavailable';
+          messageDiv.style.textAlign = 'center';
+          messageDiv.style.padding = '20px';
+          messageDiv.style.color = '#999';
+          container.appendChild(messageDiv);
         }
       });
-    } else {
-      // Display a message if no data
-      ctx.canvas.style.display = 'none';
-      const noDataMsg = document.createElement('div');
-      noDataMsg.textContent = 'No tab age data available yet';
-      noDataMsg.style.textAlign = 'center';
-      noDataMsg.style.padding = '20px';
-      noDataMsg.style.color = '#999';
-      ctx.canvas.parentNode.appendChild(noDataMsg);
+      return;
+    }
+    
+    const { tabData } = data;
+    const tabs = tabData.tabs || [];
+    
+    // Prepare data for the chart
+    const now = new Date();
+    const oneDay = 24 * 60 * 60 * 1000;
+    const oneWeek = 7 * oneDay;
+    const oneMonth = 30 * oneDay;
+    
+    let todayCount = 0;
+    let weekCount = 0; 
+    let monthCount = 0;
+    let olderCount = 0;
+    let unknownCount = 0;
+    
+    tabs.forEach(tab => {
+      try {
+        // Skip tabs with unknown creation dates or unverified dates
+        if (!tab.createdAt) {
+          unknownCount++;
+          return;
+        }
+        
+        // Skip unverified tabs if the isVerified flag is explicitly set to false
+        if (tab.hasOwnProperty('isVerified') && tab.isVerified === false) {
+          unknownCount++;
+          return;
+        }
+        
+        const createdAt = new Date(tab.createdAt);
+        
+        // Check if the date is valid
+        if (isNaN(createdAt.getTime())) {
+          console.warn('Invalid date format:', tab.createdAt);
+          unknownCount++;
+          return;
+        }
+        
+        const age = now - createdAt;
+        
+        if (age < oneDay) {
+          todayCount++;
+        } else if (age < oneWeek) {
+          weekCount++;
+        } else if (age < oneMonth) {
+          monthCount++;
+        } else {
+          olderCount++;
+        }
+      } catch (tabError) {
+        console.error('Error processing tab for chart:', tabError);
+        unknownCount++;
+      }
+    });
+    
+    // Create or update the chart
+    const chartCanvas = document.getElementById('ageDistributionChart');
+    if (!chartCanvas) {
+      console.error('Cannot find ageDistributionChart canvas element');
+      return;
+    }
+    
+    const ctx = chartCanvas.getContext('2d');
+    if (!ctx) {
+      console.error('Failed to get 2D context from canvas');
+      return;
+    }
+    
+    // Prepare datasets with labels
+    const chartData = {
+      labels: ['Opened Today', 'Open 1-7 Days', 'Open 8-30 Days', 'Open >30 Days', 'Unknown Age'],
+      datasets: [{
+        data: [todayCount, weekCount, monthCount, olderCount, unknownCount],
+        backgroundColor: ['#2ecc71', '#3498db', '#f39c12', '#e74c3c', '#95a5a6'],
+        borderWidth: 0
+      }]
+    };
+    
+    // Only show categories that have data
+    const filteredLabels = [];
+    const filteredData = [];
+    const filteredColors = [];
+    
+    chartData.labels.forEach((label, index) => {
+      if (chartData.datasets[0].data[index] > 0) {
+        filteredLabels.push(label);
+        filteredData.push(chartData.datasets[0].data[index]);
+        filteredColors.push(chartData.datasets[0].backgroundColor[index]);
+      }
+    });
+    
+    // Check if chart already exists
+    if (window.ageDistributionChart && window.ageDistributionChart.data) {
+      try {
+        // Ensure chart data structure exists before updating
+        if (!window.ageDistributionChart.data.datasets || window.ageDistributionChart.data.datasets.length === 0) {
+          window.ageDistributionChart.data.datasets = [{}];
+        }
+        window.ageDistributionChart.data.labels = filteredLabels;
+        window.ageDistributionChart.data.datasets[0].data = filteredData;
+        window.ageDistributionChart.data.datasets[0].backgroundColor = filteredColors;
+        window.ageDistributionChart.update();
+      } catch (chartUpdateError) {
+        console.error('Error updating existing chart:', chartUpdateError);
+        // If update fails, try to destroy and recreate
+        try {
+          window.ageDistributionChart.destroy();
+          window.ageDistributionChart = null;
+        } catch (destroyError) {
+          console.error('Failed to destroy chart:', destroyError);
+        }
+      }
+    }
+    
+    // Create a new chart if one doesn't exist or was destroyed
+    if (!window.ageDistributionChart) {
+      // Only create the chart if we have data to show
+      if (todayCount + weekCount + monthCount + olderCount + unknownCount > 0) {
+        try {
+          window.ageDistributionChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: filteredLabels,
+              datasets: [{
+                data: filteredData,
+                backgroundColor: filteredColors,
+                borderWidth: 0
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: {
+                    boxWidth: 12,
+                    padding: 10
+                  }
+                },
+                title: {
+                  display: true,
+                  text: 'Tab Age Distribution',
+                  font: {
+                    size: 14
+                  }
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function(context) {
+                      const label = context.label || '';
+                      const value = context.raw || 0;
+                      const total = context.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                      const percentage = Math.round((value / total) * 100);
+                      return `${label}: ${value} tabs (${percentage}%)`;
+                    }
+                  }
+                }
+              },
+              cutout: '50%'
+            }
+          });
+        } catch (chartCreationError) {
+          console.error('Failed to create chart:', chartCreationError);
+          // Show fallback message
+          if (chartCanvas) {
+            chartCanvas.style.display = 'none';
+            const errorMsg = document.createElement('div');
+            errorMsg.textContent = 'Unable to display chart. Please reload the extension.';
+            errorMsg.style.textAlign = 'center';
+            errorMsg.style.padding = '20px';
+            errorMsg.style.color = '#e74c3c';
+            chartCanvas.parentNode.appendChild(errorMsg);
+          }
+        }
+      } else {
+        // Display a message if no data
+        if (chartCanvas) {
+          chartCanvas.style.display = 'none';
+          const noDataMsg = document.createElement('div');
+          noDataMsg.textContent = 'No tab age data available yet';
+          noDataMsg.style.textAlign = 'center';
+          noDataMsg.style.padding = '20px';
+          noDataMsg.style.color = '#999';
+          chartCanvas.parentNode.appendChild(noDataMsg);
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error in initAgeDistributionChart:', error);
+    // Add generic error message to chart container
+    try {
+      const chartContainers = document.querySelectorAll('.chart-container');
+      chartContainers.forEach(container => {
+        if (!container.querySelector('.chart-error-message')) {
+          const errorMsg = document.createElement('div');
+          errorMsg.className = 'chart-error-message';
+          errorMsg.textContent = 'Chart visualization error. Please reload.';
+          errorMsg.style.textAlign = 'center';
+          errorMsg.style.padding = '20px';
+          errorMsg.style.color = '#e74c3c';
+          container.appendChild(errorMsg);
+        }
+      });
+    } catch (errorMsgError) {
+      console.error('Failed to add error message to chart container:', errorMsgError);
     }
   }
 }
 
 function initTrendChart(data) {
-  // Check if Chart is available
-  if (typeof Chart === 'undefined') {
-    console.error('Chart.js library not loaded properly');
-    // Error message was already added by initAgeDistributionChart
-    return;
-  }
-  
-  const { tabHistory = [] } = data;
-  
-  // Create or update the chart
-  const ctx = document.getElementById('trendChart')?.getContext('2d');
-  if (!ctx) {
-    console.error('Cannot find trendChart canvas element');
-    return;
-  }
-  
-  // If we don't have history data, create some initial data points
-  // so we at least have something to show in the chart
-  let chartData = tabHistory;
-  
-  if (tabHistory.length === 0) {
-    // If no history, create one entry with today's count
-    const today = new Date().toISOString().split('T')[0];
+  try {
+    // Check if data is valid
+    if (!data) {
+      console.error('Invalid data provided to initTrendChart');
+      return;
+    }
     
-    // Get the current tab count
-    chrome.tabs.query({}, (tabs) => {
-      chartData = [{ date: today, count: tabs.length }];
-      createOrUpdateTrendChart(chartData, ctx);
-    });
+    // Check if Chart is available
+    if (typeof Chart === 'undefined') {
+      console.error('Chart.js library not loaded properly');
+      // Error message was already added by initAgeDistributionChart
+      return;
+    }
     
-    return;
+    const { tabHistory = [] } = data;
+    
+    // Create or update the chart
+    const chartCanvas = document.getElementById('trendChart');
+    if (!chartCanvas) {
+      console.error('Cannot find trendChart canvas element');
+      return;
+    }
+    
+    const ctx = chartCanvas.getContext('2d');
+    if (!ctx) {
+      console.error('Failed to get 2D context from trendChart canvas');
+      return;
+    }
+    
+    // If we don't have history data, create some initial data points
+    // so we at least have something to show in the chart
+    let chartData = tabHistory;
+    
+    if (tabHistory.length === 0) {
+      try {
+        // If no history, create one entry with today's count
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Get the current tab count
+        chrome.tabs.query({}, (tabs) => {
+          try {
+            // Guard against potential chrome API errors
+            if (!tabs) {
+              console.error('Failed to get tabs from chrome.tabs.query');
+              return;
+            }
+            
+            chartData = [{ date: today, count: tabs.length }];
+            createOrUpdateTrendChart(chartData, ctx);
+          } catch (queryError) {
+            console.error('Error processing tabs from chrome.tabs.query:', queryError);
+            // Create a fallback data point
+            chartData = [{ date: today, count: 0 }];
+            createOrUpdateTrendChart(chartData, ctx);
+          }
+        });
+        
+        return;
+      } catch (historyError) {
+        console.error('Error creating initial chart data:', historyError);
+        // Create a simple fallback to prevent complete failure
+        chartData = [{ date: new Date().toISOString().split('T')[0], count: 0 }];
+      }
+    }
+    
+    createOrUpdateTrendChart(chartData, ctx);
+  } catch (error) {
+    console.error('Error in initTrendChart:', error);
+    // Add generic error message to chart container
+    try {
+      const chartContainer = document.getElementById('trendChart')?.parentNode;
+      if (chartContainer && !chartContainer.querySelector('.chart-error-message')) {
+        const errorMsg = document.createElement('div');
+        errorMsg.className = 'chart-error-message';
+        errorMsg.textContent = 'Trend chart visualization error. Please reload.';
+        errorMsg.style.textAlign = 'center';
+        errorMsg.style.padding = '20px';
+        errorMsg.style.color = '#e74c3c';
+        chartContainer.appendChild(errorMsg);
+      }
+    } catch (errorMsgError) {
+      console.error('Failed to add error message to trend chart container:', errorMsgError);
+    }
   }
-  
-  createOrUpdateTrendChart(chartData, ctx);
 }
 
 function createOrUpdateTrendChart(chartData, ctx) {
-  // Check if Chart is available
-  if (typeof Chart === 'undefined') {
-    console.error('Chart.js library not loaded properly');
-    return;
-  }
-  
-  if (!ctx) {
-    console.error('Invalid canvas context for trend chart');
-    return;
-  }
-  
-  // Prepare data for the chart
-  const labels = [];
-  const counts = [];
-  
-  // Sort by date and get the last 14 days
-  const sortedHistory = [...chartData].sort((a, b) => new Date(a.date) - new Date(b.date));
-  const recentHistory = sortedHistory.slice(-14);
-  
-  recentHistory.forEach(entry => {
-    // Format the date to be more readable (MM/DD)
-    const date = new Date(entry.date);
-    const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
+  try {
+    // Check if we have valid input parameters
+    if (!chartData || !Array.isArray(chartData)) {
+      console.error('Invalid chartData provided to createOrUpdateTrendChart');
+      return;
+    }
     
-    labels.push(formattedDate);
-    counts.push(entry.count);
-  });
-  
-  // Fill in missing days with the previous count or 0
-  if (labels.length === 1) {
-    // If we only have one data point, add another point for today
-    const today = new Date();
-    const formattedToday = `${today.getMonth() + 1}/${today.getDate()}`;
-    if (labels[0] !== formattedToday) {
-      labels.push(formattedToday);
-      counts.push(counts[0]);
+    // Check if Chart is available
+    if (typeof Chart === 'undefined') {
+      console.error('Chart.js library not loaded properly');
+      return;
     }
-  }
-  
-  // Check if chart already exists
-  if (window.trendChart && window.trendChart.data) {
-    // Ensure chart data structure exists before updating
-    if (!window.trendChart.data.datasets || window.trendChart.data.datasets.length === 0) {
-      window.trendChart.data.datasets = [{}];
+    
+    if (!ctx) {
+      console.error('Invalid canvas context for trend chart');
+      return;
     }
-    window.trendChart.data.labels = labels;
-    window.trendChart.data.datasets[0].data = counts;
-    window.trendChart.update();
-  } else {
-    window.trendChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: labels,
-        datasets: [{
-          label: 'Tab Count',
-          data: counts,
-          backgroundColor: 'rgba(52, 152, 219, 0.2)',
-          borderColor: 'rgba(52, 152, 219, 1)',
-          borderWidth: 2,
-          tension: 0.4,
-          fill: true
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            display: false
-          },
-          title: {
-            display: true,
-            text: 'Tab Count Trend',
-            font: {
-              size: 14
+    
+    // Prepare data for the chart
+    const labels = [];
+    const counts = [];
+    
+    try {
+      // Sort by date and get the last 14 days
+      const sortedHistory = [...chartData].sort((a, b) => {
+        try {
+          return new Date(a.date) - new Date(b.date);
+        } catch (sortError) {
+          console.warn('Error sorting chart data entry, using default comparison:', sortError);
+          return 0; // Default to no change in order if there's an error
+        }
+      });
+      
+      const recentHistory = sortedHistory.slice(-14);
+      
+      recentHistory.forEach(entry => {
+        try {
+          // Format the date to be more readable (MM/DD)
+          // Guard against invalid date entries
+          let formattedDate;
+          if (!entry.date) {
+            console.warn('Missing date in chart entry, using current date');
+            formattedDate = 'Unknown';
+          } else {
+            const date = new Date(entry.date);
+            if (isNaN(date.getTime())) {
+              console.warn('Invalid date in chart entry:', entry.date);
+              formattedDate = 'Invalid';
+            } else {
+              formattedDate = `${date.getMonth() + 1}/${date.getDate()}`;
             }
+          }
+          
+          labels.push(formattedDate);
+          counts.push(typeof entry.count === 'number' ? entry.count : 0);
+        } catch (entryError) {
+          console.error('Error processing chart data entry:', entryError);
+          // Add placeholder data to maintain chart structure
+          labels.push('Error');
+          counts.push(0);
+        }
+      });
+      
+      // Fill in missing days with the previous count or 0
+      if (labels.length === 1) {
+        // If we only have one data point, add another point for today
+        const today = new Date();
+        const formattedToday = `${today.getMonth() + 1}/${today.getDate()}`;
+        if (labels[0] !== formattedToday) {
+          labels.push(formattedToday);
+          counts.push(counts[0]);
+        }
+      }
+    } catch (dataProcessingError) {
+      console.error('Error processing chart data:', dataProcessingError);
+      // Create fallback data if processing fails
+      labels.push('Today');
+      counts.push(0);
+    }
+    
+    // Check if chart already exists
+    if (window.trendChart && window.trendChart.data) {
+      try {
+        // Ensure chart data structure exists before updating
+        if (!window.trendChart.data.datasets || window.trendChart.data.datasets.length === 0) {
+          window.trendChart.data.datasets = [{}];
+        }
+        window.trendChart.data.labels = labels;
+        window.trendChart.data.datasets[0].data = counts;
+        window.trendChart.update();
+      } catch (updateError) {
+        console.error('Error updating existing trend chart:', updateError);
+        // If update fails, try to destroy and recreate
+        try {
+          window.trendChart.destroy();
+          window.trendChart = null;
+        } catch (destroyError) {
+          console.error('Failed to destroy trend chart:', destroyError);
+        }
+      }
+    }
+    
+    // Create a new chart if one doesn't exist or was destroyed
+    if (!window.trendChart) {
+      try {
+        window.trendChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Tab Count',
+              data: counts,
+              backgroundColor: 'rgba(52, 152, 219, 0.2)',
+              borderColor: 'rgba(52, 152, 219, 1)',
+              borderWidth: 2,
+              tension: 0.4,
+              fill: true
+            }]
           },
-          tooltip: {
-            callbacks: {
-              title: function(tooltipItems) {
-                return tooltipItems[0].label;
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
               },
-              label: function(context) {
-                return `Tabs: ${context.raw}`;
+              title: {
+                display: true,
+                text: 'Tab Count Trend',
+                font: {
+                  size: 14
+                }
+              },
+              tooltip: {
+                callbacks: {
+                  title: function(tooltipItems) {
+                    if (!tooltipItems || tooltipItems.length === 0) return '';
+                    return tooltipItems[0].label || '';
+                  },
+                  label: function(context) {
+                    if (!context) return '';
+                    return `Tabs: ${context.raw !== undefined ? context.raw : 0}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                ticks: {
+                  precision: 0
+                }
               }
             }
           }
-        },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: {
-              precision: 0
-            }
+        });
+      } catch (createError) {
+        console.error('Failed to create trend chart:', createError);
+        // Show fallback message
+        try {
+          const chartCanvas = ctx.canvas;
+          if (chartCanvas) {
+            chartCanvas.style.display = 'none';
+            const errorMsg = document.createElement('div');
+            errorMsg.textContent = 'Unable to display trend chart. Please reload the extension.';
+            errorMsg.style.textAlign = 'center';
+            errorMsg.style.padding = '20px';
+            errorMsg.style.color = '#e74c3c';
+            chartCanvas.parentNode.appendChild(errorMsg);
           }
+        } catch (fallbackError) {
+          console.error('Failed to show trend chart error message:', fallbackError);
         }
       }
-    });
+    }
+  } catch (error) {
+    console.error('Error in createOrUpdateTrendChart:', error);
   }
 }
 

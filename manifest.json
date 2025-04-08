@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tab Age Tracker",
-  "version": "1.8",
+  "version": "1.9",
   "description": "Tracks and analyzes the age of your open tabs to help you reduce clutter and reach Tab Zero",
   "permissions": [
     "tabs",
@@ -10,7 +10,7 @@
     "notifications"
   ],
   "content_security_policy": {
-    "extension_pages": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https://* data:"
+    "extension_pages": "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https://* data:; connect-src 'self' https://*"
   },
   "background": {
     "service_worker": "background.js"
