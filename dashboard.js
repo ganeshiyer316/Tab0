@@ -283,6 +283,9 @@ function updateSummaryStats(distributionData) {
         document.getElementById('unknownPercent').textContent = 
             `(${Math.round((categories.unknown || 0) / total * 100)}%)`;
     }
+    
+    // Update oldest tabs section
+    displayOldestTabs();
 }
 
 /**
@@ -1230,5 +1233,95 @@ function extractDateFromURL(url) {
     } catch (e) {
         console.warn("Error extracting date from URL:", e);
         return null;
+    }
+}
+
+/**
+ * Display the top 5 oldest tabs
+ */
+function displayOldestTabs() {
+    const container = document.getElementById('oldestTabsContainer');
+    
+    // Clear the container
+    container.innerHTML = '';
+    
+    if (!tabData || tabData.length === 0) {
+        container.innerHTML = '<p>No tab data available. Please sync your data from the extension.</p>';
+        return;
+    }
+    
+    // Process tabs to calculate age consistently
+    const processedTabs = tabData.map(tab => {
+        const processed = {...tab};
+        
+        // Handle missing created date
+        if (!processed.createdAt) {
+            // Try to extract date from URL
+            const extractedDate = extractDateFromURL(processed.url);
+            if (extractedDate) {
+                processed.extractedDate = extractedDate;
+                processed.ageSource = 'url';
+                processed.ageDays = getDaysSince(extractedDate.toISOString());
+            } else {
+                processed.ageSource = 'unknown';
+                processed.ageDays = Number.MAX_SAFE_INTEGER; // Treat unknown as oldest
+            }
+        } else {
+            processed.ageSource = 'created';
+            processed.ageDays = getDaysSince(processed.createdAt);
+        }
+        
+        return processed;
+    });
+    
+    // Sort tabs by age (oldest first, unknown age at the end)
+    const sortedTabs = [...processedTabs].sort((a, b) => {
+        // If both have unknown age, sort by title
+        if (a.ageSource === 'unknown' && b.ageSource === 'unknown') {
+            return a.title.localeCompare(b.title);
+        }
+        
+        // Put unknown age at the end
+        if (a.ageSource === 'unknown') return 1;
+        if (b.ageSource === 'unknown') return -1;
+        
+        // Otherwise sort by age in days (descending)
+        return b.ageDays - a.ageDays;
+    });
+    
+    // Take the top 5 oldest tabs
+    const oldestTabs = sortedTabs.slice(0, 5);
+    
+    // Create HTML for each tab
+    oldestTabs.forEach(tab => {
+        const tabElement = document.createElement('div');
+        tabElement.className = 'top-tab-item';
+        
+        // Create age display
+        let ageDisplay = '';
+        if (tab.ageSource === 'unknown') {
+            ageDisplay = 'Unknown Age';
+        } else {
+            ageDisplay = formatAge(tab.ageDays);
+            if (tab.ageSource === 'url') {
+                ageDisplay += ' (from URL)';
+            }
+        }
+        
+        // Create tab HTML
+        tabElement.innerHTML = `
+            <div class="top-tab-content">
+                <div class="top-tab-title">${sanitize(truncateString(tab.title, 60))}</div>
+                <div class="top-tab-url">${sanitize(truncateString(tab.url, 80))}</div>
+            </div>
+            <div class="top-tab-age">${ageDisplay}</div>
+        `;
+        
+        container.appendChild(tabElement);
+    });
+    
+    // Add a message if no tabs were found
+    if (oldestTabs.length === 0) {
+        container.innerHTML = '<p>No tab data available. Please sync your data from the extension.</p>';
     }
 }

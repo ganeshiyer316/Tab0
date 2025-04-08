@@ -73,17 +73,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Set up search functionality
     const searchInput = getElement('searchInput');
     if (searchInput) {
-      // Add immediate search when typing
-      searchInput.addEventListener('input', function() {
-        if (this.value.trim().length > 2) {
-          searchTabs(this.value);
-        }
-      });
-      
-      // Add search on enter key press
+      // Only add search on enter key press - we don't want to search on every keystroke
       searchInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter' && this.value.trim().length > 0) {
-          searchTabs(this.value);
+          // Go directly to the dashboard with the search filter
+          openWebDashboardWithSearch(this.value.trim());
           e.preventDefault();
         }
       });
@@ -885,8 +879,8 @@ function openWebDashboard() {
         const encodedData = btoa(encodeURIComponent(dataString));
         
         // Determine if we should pass a server URL parameter (when serverUrl is set but useServerDashboard is false)
-        // Note: The dashboard.html is in the root directory, not in a /website folder
-        let dashboardUrl = chrome.runtime.getURL(`/dashboard.html?data=${encodedData}`);
+        // Ensure we use the correct path to dashboard.html
+        let dashboardUrl = chrome.runtime.getURL(`dashboard.html?data=${encodedData}`);
         
         // Add server URL to parameters if available
         if (settings.serverUrl) {
@@ -906,45 +900,15 @@ function openWebDashboard() {
  * @param {string} query - The search query
  */
 function searchTabs(query) {
-  // Trim the query and check if it's empty
+  // This function is now simplified to just open the dashboard with search
+  // No pre-filtering is done in the popup
   const trimmedQuery = query?.trim();
   if (!trimmedQuery) {
     return;
   }
   
-  chrome.storage.local.get(['tabData'], (result) => {
-    const tabData = result.tabData || { tabs: [] };
-    const tabs = tabData.tabs || [];
-    
-    // Filter tabs by query
-    const lowerQuery = trimmedQuery.toLowerCase();
-    const matchingTabs = tabs.filter(tab => {
-      const title = tab.title || '';
-      const url = tab.url || '';
-      
-      // Create a domain-only version for domain-specific searches
-      let domain = '';
-      try {
-        domain = new URL(url).hostname;
-      } catch (e) {
-        // URL parsing failed, use the full URL
-      }
-      
-      return title.toLowerCase().includes(lowerQuery) || 
-             url.toLowerCase().includes(lowerQuery) || 
-             domain.toLowerCase().includes(lowerQuery);
-    });
-    
-    if (matchingTabs.length > 0) {
-      // Show a notification with the match count
-      showNotification(`Found ${matchingTabs.length} matching tab${matchingTabs.length > 1 ? 's' : ''}. Opening dashboard...`);
-      
-      // Open the dashboard with a search filter
-      openWebDashboardWithSearch(trimmedQuery);
-    } else {
-      showNotification('No tabs found matching your search query.');
-    }
-  });
+  // Open the dashboard with a search filter
+  openWebDashboardWithSearch(trimmedQuery);
 }
 
 /**
@@ -991,8 +955,8 @@ function openWebDashboardWithSearch(searchQuery) {
         const dataString = JSON.stringify(data);
         const encodedData = btoa(encodeURIComponent(dataString));
         
-        // The dashboard.html is in the root directory
-        let dashboardUrl = chrome.runtime.getURL(`/dashboard.html?data=${encodedData}&search=${encodeURIComponent(searchQuery)}`);
+        // Ensure we use the correct path to dashboard.html
+        let dashboardUrl = chrome.runtime.getURL(`dashboard.html?data=${encodedData}&search=${encodeURIComponent(searchQuery)}`);
         
         // Add server URL to parameters if available
         if (settings.serverUrl) {

@@ -190,6 +190,52 @@ footer a {
     text-decoration: none;
 }
 
+/* Top tabs container styles */
+.top-tabs-container {
+    margin-bottom: 25px;
+}
+
+.top-tab-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 10px 15px;
+    background-color: white;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+}
+
+.top-tab-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+}
+
+.top-tab-content {
+    flex: 1;
+}
+
+.top-tab-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: var(--primary-color);
+}
+
+.top-tab-url {
+    font-size: 0.85rem;
+    color: var(--dark-gray);
+    word-break: break-all;
+    margin-bottom: 5px;
+}
+
+.top-tab-age {
+    font-weight: bold;
+    color: var(--danger-color);
+    white-space: nowrap;
+    margin-left: 10px;
+}
+
 /* Age category pill styles */
 .category-pill {
     display: inline-block;
