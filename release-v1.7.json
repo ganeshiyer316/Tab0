@@ -1,0 +1,8 @@
+{
+  "tag_name": "v1.7",
+  "target_commitish": "main",
+  "name": "Tab Age Tracker v1.7",
+  "body": "Tab Age Tracker v1.7 is a stable release with the following key features and improvements:\n\n- Fixed tab sorting functionality, particularly for 'newest to oldest' sorting\n- Improved handling of unknown age tabs\n- Enhanced filter UI for better usability\n- Added 'What's New' section highlighting feature improvements\n- Fixed date extraction for special URL patterns\n- Improved UI responsiveness and tooltip explanations",
+  "draft": false,
+  "prerelease": false
+}
