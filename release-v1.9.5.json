@@ -1,0 +1,14 @@
+{
+  "version": "1.9.5",
+  "manifest_version": 3,
+  "name": "Tab Age Tracker",
+  "description": "Tracks and analyzes the age of your open tabs to help you reduce clutter and reach Tab Zero",
+  "release_date": "April 9, 2025",
+  "changes": [
+    "Fixed Content Security Policy to remove both 'unsafe-eval' and 'unsafe-inline' directives for full compliance with Chrome's security requirements",
+    "Modified CSP to use only 'self' sources for scripts and styles",
+    "Updated all JavaScript to avoid inline event handlers and evaluated code",
+    "Improved security posture of the extension while maintaining full functionality"
+  ],
+  "known_issues": []
+}
