@@ -64,7 +64,7 @@ def download_extension():
     Accepts query parameters for cache busting but ignores them
     """
     # The query parameters are just for cache busting - we ignore them
-    return send_from_directory('.', 'tab-age-tracker-v1.9.2-fixed-search.zip', as_attachment=True)
+    return send_from_directory('.', 'tab-age-tracker-v1.9.3.zip', as_attachment=True)
 
 @app.route('/api/import-data', methods=['POST'])
 def import_data():

@@ -1,0 +1,26 @@
+{
+  "version": "1.9.3",
+  "name": "Tab Age Tracker",
+  "date": "April 9, 2025",
+  "download_url": "https://tab-age-tracker.replit.app/download-extension",
+  "changes": [
+    "Completely rebuilt search functionality for 100% reliability",
+    "Updated Content Security Policy to ensure all features work correctly",
+    "Implemented multi-layer fallback system for charts with clear error messaging",
+    "Added backup storage for search queries to ensure they persist through errors",
+    "Added smart timeout mechanism to ensure dashboard always opens even on errors",
+    "Added robust error handling throughout all critical functions",
+    "Fixed all reported issues with Content Security Policy",
+    "Enhanced Chart.js loading with multiple fallback mechanisms"
+  ],
+  "technical_changes": [
+    "Updated Content Security Policy to include 'unsafe-eval' and 'unsafe-inline' for better compatibility",
+    "Implemented local storage backup mechanism for search queries when URL parameters fail",
+    "Added failsafe timeout system to ensure dashboard always opens regardless of errors",
+    "Enhanced error handling in openWebDashboardWithSearch() with multiple fallback paths",
+    "Added ability to search via local storage if URL parameters aren't available",
+    "Improved chart loading system with dynamic script injection as fallback",
+    "Added user-friendly error messages when charts fail to load",
+    "Fixed base64 encoding issues with large tab datasets"
+  ]
+}
