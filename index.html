@@ -85,8 +85,8 @@
         <div class="section">
             <h2>Download Extension</h2>
             <p>Click the button below to download the Tab Age Tracker extension package:</p>
-            <a href="/download-extension?v=1.9.3&t=20250409" class="button">Download Extension v1.9.3 (.zip)</a>
-            <p style="color: #4CAF50; margin-top: 10px;"><strong>Latest Version:</strong> v1.9.3 resolves ALL critical issues, including Content Security Policy, Chart.js loading, and search functionality!</p>
+            <a href="/download-extension?v=1.9.4&t=20250409" class="button">Download Extension v1.9.4 (.zip)</a>
+            <p style="color: #4CAF50; margin-top: 10px;"><strong>Latest Version:</strong> v1.9.4 fixes Chrome security policy issues and has full compatibility with the latest Chrome updates!</p>
         </div>
         
         <div class="section">
@@ -109,7 +109,19 @@
         </div>
         
         <div class="section" style="border-left: 4px solid #4CAF50;">
-            <h2>What's New in v1.9.3 (Latest - Critical Update)</h2>
+            <h2>What's New in v1.9.4 (Latest - Chrome Compatible)</h2>
+            <ul>
+                <li><strong>Chrome Security Fix</strong> - Removed 'unsafe-eval' from Content Security Policy for full Chrome compatibility</li>
+                <li><strong>Fixed Extension Loading</strong> - Resolved issues with Chrome rejecting the extension due to CSP restrictions</li>
+                <li><strong>Enhanced Script Loading</strong> - Improved script loading to avoid CSP violations in all scenarios</li>
+                <li><strong>Chart Reliability</strong> - Ensured charts load properly without requiring 'unsafe-eval' directives</li>
+                <li><strong>Error Handling</strong> - Added robust fallbacks to display data even when charts can't load</li>
+                <li><strong>Updated Documentation</strong> - Added guidance about Chrome's latest security requirements</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>What's New in v1.9.3</h2>
             <ul>
                 <li><strong>Comprehensive Search Fix</strong> - Completely rebuilt search functionality for 100% reliability</li>
                 <li><strong>Content Security Policy Updates</strong> - Added proper CSP directives to ensure all features work correctly</li>

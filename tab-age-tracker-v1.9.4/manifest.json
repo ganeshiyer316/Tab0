@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Tab Age Tracker",
-  "version": "1.9.3",
+  "version": "1.9.4",
   "description": "Tracks and analyzes the age of your open tabs to help you reduce clutter and reach Tab Zero",
   "permissions": [
     "tabs",

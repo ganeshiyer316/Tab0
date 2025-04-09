@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tab Age Tracker - Web Dashboard</title>
+    <!-- Pre-load Chart.js in the head to ensure it's fully loaded before any charts are initialized -->
+    <script src="chart.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 30px;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2196F3;
+            margin-top: 0;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #555;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+        .stats-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            flex: 1 1 200px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .stat-card h3 {
+            margin-top: 0;
+            color: #555;
+        }
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2196F3;
+            margin: 10px 0;
+        }
+        .chart-container {
+            margin: 20px 0;
+            height: 300px;
+        }
+        .tabs-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .tabs-table th, .tabs-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .tabs-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+        }
+        .tabs-table tr:hover {
+            background-color: #f9f9f9;
+        }
+        .button {
+            display: inline-block;
+            background-color: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 10px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #0d8bf2;
+        }
+        .progress-container {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .chart-description {
+            color: #666;
+            margin-top: -10px;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            cursor: help;
+            color: #2196F3;
+        }
+        .tooltip-text {
+            visibility: hidden;
+            width: 300px;
+            background-color: #555;
+            color: #fff;
+            text-align: left;
+            border-radius: 6px;
+            padding: 8px 12px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -150px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            line-height: 1.5;
+        }
+        .tooltip:hover .tooltip-text {
+            visibility: visible;
+            opacity: 1;
+        }
+        .progress-bar {
+            height: 24px;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            text-align: center;
+            line-height: 24px;
+            color: white;
+            font-weight: bold;
+        }
+        .info-bar {
+            padding: 10px 15px;
+            margin: 20px 0;
+            background-color: #e3f2fd;
+            border-left: 5px solid #2196F3;
+            border-radius: 4px;
+        }
+        .tab-group {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            border-left: 4px solid #2196F3;
+        }
+        .tab-group h3 {
+            margin-top: 0;
+            color: #2196F3;
+        }
+        
+        /* Top 5 oldest tabs styling */
+        .top-tabs-container {
+            margin-top: 15px;
+        }
+        
+        .top-tab-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+            border-radius: 6px;
+            border-left: 4px solid #e74c3c;
+            transition: background-color 0.2s;
+        }
+        
+        .top-tab-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .top-tab-content {
+            flex: 1;
+            overflow: hidden;
+        }
+        
+        .top-tab-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        
+        .top-tab-url {
+            color: #666;
+            font-size: 0.9em;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .top-tab-age {
+            min-width: 100px;
+            text-align: right;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tab Age Tracker - Web Dashboard</h1>
+        
+        <div class="info-bar">
+            <p><strong>Status:</strong> This dashboard is waiting for data from the Tab Age Tracker extension. Install the extension and sync your data to see analytics.</p>
+            <a href="/" class="button">Back to Home</a>
+        </div>
+        
+        <h2>Summary Statistics</h2>
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3>Current Tabs</h3>
+                <div class="stat-value">0</div>
+                <p>Total open tabs</p>
+            </div>
+            <div class="stat-card">
+                <h3>Peak Tab Count</h3>
+                <div class="stat-value">0</div>
+                <p>Maximum tabs observed</p>
+            </div>
+            <div class="stat-card">
+                <h3>Progress to Tab Zero</h3>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: 0%">0%</div>
+                </div>
+                <p>Based on your peak tab count</p>
+            </div>
+            <div class="stat-card">
+                <h3>Average Tab Age</h3>
+                <div class="stat-value">0</div>
+                <p>Days</p>
+            </div>
+        </div>
+        
+        <h2>Tab Age Distribution</h2>
+        <div class="chart-container">
+            <canvas id="ageDistributionChart"></canvas>
+        </div>
+        
+        <h2>Tab Count Trend</h2>
+        <div class="chart-container">
+            <canvas id="tabTrendChart"></canvas>
+        </div>
+        
+        <h2>Daily Progress</h2>
+        <p class="chart-description">
+            This chart shows the minimum, average, and maximum number of tabs you've had open each day.
+            <span class="tooltip">ℹ️
+                <span class="tooltip-text">
+                    <strong>Maximum (Red):</strong> The highest number of tabs open during the day<br>
+                    <strong>Average (Blue):</strong> The average number of tabs open throughout the day<br>
+                    <strong>Minimum (Green):</strong> The lowest number of tabs open during the day
+                </span>
+            </span>
+        </p>
+        <div class="chart-container">
+            <canvas id="dailyProgressChart"></canvas>
+        </div>
+        
+        <h2>Daily Tab Activity</h2>
+        <div class="chart-container">
+            <canvas id="tabChangesChart"></canvas>
+        </div>
+        
+        <h2>Top 5 Oldest Tabs</h2>
+        <div id="oldestTabsContainer" class="top-tabs-container">
+            <p>Loading oldest tabs...</p>
+        </div>
+        
+        <h2>Suggested Tab Groups</h2>
+        <p>Based on your browsing patterns, here are some suggested tab groups:</p>
+        
+        <div id="suggested-groups-container">
+            <p>No tab groups suggestions available. Please sync your data from the extension.</p>
+        </div>
+        
+        <h2>Current Tabs</h2>
+        <p>Search and filter your tabs:</p>
+        <div class="search-filter-container" style="display: flex; margin-bottom: 15px; align-items: center; flex-wrap: wrap;">
+            <div class="search-box" style="position: relative; margin-right: 15px; margin-bottom: 10px; flex: 1;">
+                <input type="text" id="searchInput" placeholder="Search by title, URL or domain" style="padding: 10px; width: 100%; min-width: 250px; border-radius: 4px; border: 1px solid #ccc;">
+                <button id="clearSearch" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #999; cursor: pointer; display: none;">✕</button>
+            </div>
+            <div style="display: flex; flex-wrap: wrap;">
+                <select id="categoryFilter" style="padding: 8px; margin-right: 10px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="all">All Categories</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="older">Older</option>
+                    <option value="unknown">Unknown Age</option>
+                </select>
+                <select id="sortOption" style="padding: 8px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="age-desc">Oldest First</option>
+                    <option value="age-asc">Newest First</option>
+                    <option value="title">By Title</option>
+                </select>
+            </div>
+        </div>
+        <div id="searchStatus" style="margin-bottom: 15px; color: #555; font-style: italic; display: none;"></div>
+        
+        <table class="tabs-table" id="tabs-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Age</th>
+                    <th>Created</th>
+                    <th>URL</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="4">No tab data available. Please sync your data from the extension.</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 30px; text-align: center;">
+            <a href="/" class="button">Back to Home</a>
+        </div>
+    </div>
+    
+    <!-- Chart.js is already loaded in the head -->
+    <script src="dashboard.js"></script>
+    <script>
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDashboard();
+        });
+    </script>
+</body>
+</html>
