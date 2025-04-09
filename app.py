@@ -63,8 +63,26 @@ def download_extension():
     """Download the latest version of the extension
     Accepts query parameters for cache busting but ignores them
     """
-    # The query parameters are just for cache busting - we ignore them
-    return send_from_directory('.', 'tab-age-tracker-v1.9.3.zip', as_attachment=True)
+    # Get the version from query parameter or default to the latest
+    version = request.args.get('v', '1.9.4')
+    
+    # Map of version names to file names
+    version_map = {
+        '1.9.4': 'tab-age-tracker-v1.9.4.zip',
+        '1.9.3': 'tab-age-tracker-v1.9.3.zip',
+        '1.9.2-fixed-search': 'tab-age-tracker-v1.9.2-fixed-search.zip',
+        '1.9.2-fixed': 'tab-age-tracker-v1.9.2-fixed.zip',
+        '1.9.2': 'tab-age-tracker-v1.9.2.zip',
+        '1.9.1': 'tab-age-tracker-v1.9.1.zip',
+        '1.9': 'tab-age-tracker-v1.9.zip',
+        '1.8': 'tab-age-tracker-v1.8.zip',
+        '1.7': 'tab-age-tracker-v1.7.zip'
+    }
+    
+    # Get the file name or default to the latest version
+    file_name = version_map.get(version, 'tab-age-tracker-v1.9.4.zip')
+    
+    return send_from_directory('.', file_name, as_attachment=True)
 
 @app.route('/api/import-data', methods=['POST'])
 def import_data():
