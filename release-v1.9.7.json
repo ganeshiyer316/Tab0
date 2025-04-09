@@ -1,0 +1,5 @@
+{
+  "version": "1.9.7",
+  "name": "Tab Age Tracker v1.9.7",
+  "tag_name": "v1.9.7",
+  "notes": "### Bug Fixes\n\n- Fixed Content Security Policy compliance issues by removing all inline styles in dashboard.html\n- Fixed search functionality by making sure popup.js formats data correctly for dashboard.js\n- Added better error handling and debugging logs for search and data transfer between popup and dashboard\n\n### What's Changed\n\n- Moved all inline styles from dashboard.html to dashboard.css file\n- Improved data format consistency when passing data from popup to dashboard\n- Added additional CSS classes for better structure and maintainability\n\n### Files\n\n- [tab-age-tracker-v1.9.7.zip](https://tab-age-tracker.ganeshiyer316.repl.co/tab-age-tracker-v1.9.7.zip)"
