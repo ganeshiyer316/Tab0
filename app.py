@@ -60,8 +60,11 @@ def serve_file(path):
 
 @app.route('/download-extension')
 def download_extension():
-    """Download the latest version of the extension"""
-    return send_from_directory('.', 'tab-age-tracker-v1.9.2.zip')
+    """Download the latest version of the extension
+    Accepts query parameters for cache busting but ignores them
+    """
+    # The query parameters are just for cache busting - we ignore them
+    return send_from_directory('.', 'tab-age-tracker-v1.9.2.zip', as_attachment=True)
 
 @app.route('/api/import-data', methods=['POST'])
 def import_data():
