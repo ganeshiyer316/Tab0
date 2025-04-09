@@ -26,13 +26,48 @@ document.addEventListener('DOMContentLoaded', function() {
     const urlParams = new URLSearchParams(window.location.search);
     const searchQuery = urlParams.get('search');
     
-    if (searchQuery) {
+    function applySearch(query) {
+        if (!query) return;
+        
+        console.log("Applying search query:", query);
+        
         // Set the search input field value
         const searchInput = document.getElementById('searchInput');
         if (searchInput) {
-            searchInput.value = searchQuery;
+            searchInput.value = query;
             // Trigger the search filter
             filterTabs();
+            
+            // Scroll to the tabs section
+            setTimeout(() => {
+                const tabsSection = document.getElementById('tabsSection');
+                if (tabsSection) {
+                    tabsSection.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, 500);
+        }
+    }
+    
+    if (searchQuery) {
+        // Apply the URL search parameter
+        applySearch(searchQuery);
+    } else {
+        // If no URL parameter, check Chrome storage for last search query
+        // This helps when the URL parameter approach fails
+        try {
+            if (typeof chrome !== 'undefined' && chrome.storage) {
+                chrome.storage.local.get(['lastSearchQuery'], function(result) {
+                    if (result.lastSearchQuery) {
+                        console.log("Found stored search query:", result.lastSearchQuery);
+                        applySearch(result.lastSearchQuery);
+                        
+                        // Clear the stored search query after using it
+                        chrome.storage.local.remove(['lastSearchQuery']);
+                    }
+                });
+            }
+        } catch (e) {
+            console.error("Error accessing Chrome storage:", e);
         }
     }
 });

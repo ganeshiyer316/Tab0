@@ -1061,6 +1061,41 @@ function openWebDashboardWithSearch(searchQuery) {
   // Show a notification about opening dashboard with search
   showNotification(`Opening dashboard with search: "${searchQuery}"`);
   
+  // Track if dashboard was successfully opened
+  let dashboardOpened = false;
+  
+  // Failsafe timeout to ensure we always open a dashboard and reset the search input
+  const timeoutId = setTimeout(() => {
+    if (!dashboardOpened) {
+      console.warn("Search operation timed out, using fallback method");
+      try {
+        // Fallback to opening the dashboard without data params but with search
+        const fallbackUrl = chrome.runtime.getURL("dashboard.html") + 
+          `?search=${encodeURIComponent(searchQuery)}`;
+        chrome.tabs.create({ url: fallbackUrl });
+      } catch (e) {
+        console.error("Critical error in fallback dashboard open:", e);
+        // Last resort - open web dashboard
+        chrome.tabs.create({ 
+          url: "https://tab-age-tracker.replit.app/dashboard.html?search=" + 
+            encodeURIComponent(searchQuery) 
+        });
+      }
+    }
+    
+    // Reset search input regardless
+    if (searchInput) {
+      searchInput.placeholder = originalPlaceholder;
+      searchInput.disabled = false;
+    }
+  }, 3000); // 3 second timeout as failsafe
+  
+  // First save search query to local storage so dashboard can find it
+  // This is a backup method if URL parameters fail
+  chrome.storage.local.set({ 'lastSearchQuery': searchQuery }, function() {
+    console.log("Search query saved to local storage:", searchQuery);
+  });
+  
   try {
     // Get current data
     chrome.storage.local.get(['tabData', 'tabHistory', 'peakTabCount'], (data) => {
@@ -1080,44 +1115,73 @@ function openWebDashboardWithSearch(searchQuery) {
             console.log("Use server dashboard:", useServerDashboard);
             console.log("Server URL:", serverUrl);
             
-            // Reset search input state after a short delay
-            setTimeout(() => {
-              if (searchInput) {
-                searchInput.placeholder = originalPlaceholder;
-                searchInput.disabled = false;
-              }
-            }, 1500);
+            // Clear the failsafe timeout since we're proceeding normally
+            clearTimeout(timeoutId);
+            
+            // Reset search input state
+            if (searchInput) {
+              searchInput.placeholder = originalPlaceholder;
+              searchInput.disabled = false;
+            }
             
             if (useServerDashboard) {
               try {
                 // Use the server dashboard with search parameter
                 const serverSearchUrl = `${serverUrl}dashboard.html?search=${encodeURIComponent(searchQuery)}`;
                 console.log("Opening server dashboard with URL:", serverSearchUrl);
+                
                 chrome.tabs.create({ url: serverSearchUrl }, (tab) => {
                   console.log("Tab created with ID:", tab.id);
+                  dashboardOpened = true;
                 });
                 
                 // Sync data with the server
                 chrome.runtime.sendMessage({ action: 'syncData' });
               } catch (createTabError) {
                 console.error("Error creating server dashboard tab:", createTabError);
-                showNotification("Error opening server dashboard. Check console for details.");
+                showNotification("Error opening server dashboard. Using fallback...");
+                
+                // Try local dashboard as fallback
+                try {
+                  const localDashboardUrl = chrome.runtime.getURL("dashboard.html") + 
+                    `?search=${encodeURIComponent(searchQuery)}`;
+                  chrome.tabs.create({ url: localDashboardUrl });
+                  dashboardOpened = true;
+                } catch (e) {
+                  console.error("Both server and local dashboard creation failed:", e);
+                }
               }
             } else {
               try {
-                // Convert the data to a base64 string
-                const dataString = JSON.stringify(data);
-                const encodedData = btoa(encodeURIComponent(dataString));
+                // If data is very large, use a simpler approach to avoid URI length issues
+                let localDashboardUrl = '';
                 
-                // Build the URL with search parameter
-                const localDashboardUrl = chrome.runtime.getURL("dashboard.html") + 
-                  `?data=${encodedData}&search=${encodeURIComponent(searchQuery)}`;
+                try {
+                  // Convert the data to a base64 string
+                  const dataString = JSON.stringify(data);
+                  const encodedData = btoa(encodeURIComponent(dataString));
+                  
+                  // Check if encoded data isn't too large (browsers have URL length limits)
+                  if (encodedData && encodedData.length < 100000) { // ~100KB limit for URL
+                    localDashboardUrl = chrome.runtime.getURL("dashboard.html") + 
+                      `?data=${encodedData}&search=${encodeURIComponent(searchQuery)}`;
+                  } else {
+                    console.warn("Data too large for URL parameter, using search-only URL");
+                    localDashboardUrl = chrome.runtime.getURL("dashboard.html") + 
+                      `?search=${encodeURIComponent(searchQuery)}`;
+                  }
+                } catch (encodingError) {
+                  console.error("Error encoding data:", encodingError);
+                  localDashboardUrl = chrome.runtime.getURL("dashboard.html") + 
+                    `?search=${encodeURIComponent(searchQuery)}`;
+                }
                 
                 console.log("Opening local dashboard with URL:", localDashboardUrl);
                 
                 // Open the local web dashboard in a new tab with the data and search parameter
                 chrome.tabs.create({ url: localDashboardUrl }, (tab) => {
                   console.log("Tab created with ID:", tab.id);
+                  dashboardOpened = true;
                 });
               } catch (createTabError) {
                 console.error("Error creating local dashboard tab:", createTabError);
