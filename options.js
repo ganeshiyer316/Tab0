@@ -540,12 +540,11 @@ function setupEventListeners() {
   const checkOldTabsBtn = document.getElementById('checkOldTabsBtn');
   checkOldTabsBtn.addEventListener('click', checkOldTabs);
   
-  // Export buttons
-  const exportCsvBtn = document.getElementById('exportCsvBtn');
-  exportCsvBtn.addEventListener('click', exportTabsToCsv);
-  
-  const exportJsonBtn = document.getElementById('exportJsonBtn');
-  exportJsonBtn.addEventListener('click', exportTabsToJson);
+  // Feedback form submission
+  const submitFeedbackBtn = document.getElementById('submitFeedbackBtn');
+  if (submitFeedbackBtn) {
+    submitFeedbackBtn.addEventListener('click', submitFeedback);
+  }
   
   // Web Dashboard buttons
   const openWebDashboardBtn = document.getElementById('openWebDashboardBtn');
@@ -994,4 +993,86 @@ async function exportToWebDashboard() {
     console.error('Error exporting to web dashboard:', error);
     showError('Failed to export data to web dashboard. Please try again.');
   }
+}
+
+// Function to submit feedback to the server
+async function submitFeedback() {
+  const emailInput = document.getElementById('feedbackEmail');
+  const feedbackTextarea = document.getElementById('feedbackText');
+  const feedbackStatus = document.getElementById('feedbackStatus');
+  const submitButton = document.getElementById('submitFeedbackBtn');
+  
+  // Get values
+  const email = emailInput.value.trim();
+  const feedback = feedbackTextarea.value.trim();
+  
+  // Validate
+  if (!feedback) {
+    feedbackStatus.textContent = 'Please enter your feedback before submitting.';
+    feedbackStatus.className = 'feedback-status error-message';
+    return;
+  }
+  
+  // Optional email validation
+  if (email && !validateEmail(email)) {
+    feedbackStatus.textContent = 'Please enter a valid email address.';
+    feedbackStatus.className = 'feedback-status error-message';
+    return;
+  }
+  
+  try {
+    // Show loading state
+    submitButton.disabled = true;
+    feedbackStatus.textContent = 'Submitting feedback...';
+    feedbackStatus.className = 'feedback-status';
+    
+    // Get server URL from settings if available, or use default
+    const { settings } = await new Promise((resolve) => {
+      chrome.storage.local.get(['settings'], resolve);
+    });
+    
+    const serverUrl = (settings && settings.serverUrl) || 'https://tab-age-tracker.replit.app';
+    const apiUrl = `${serverUrl}/api/submit-feedback`;
+    
+    // Send feedback to server
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        email: email,
+        feedback: feedback
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (data.status === 'success') {
+      // Clear form
+      emailInput.value = '';
+      feedbackTextarea.value = '';
+      
+      // Show success message
+      feedbackStatus.textContent = data.message || 'Feedback submitted successfully!';
+      feedbackStatus.className = 'feedback-status success-message';
+      
+      // Show message notification
+      showMessage('Thank you for your feedback!');
+    } else {
+      throw new Error(data.message || 'Failed to submit feedback');
+    }
+  } catch (error) {
+    console.error('Error submitting feedback:', error);
+    feedbackStatus.textContent = 'Failed to submit feedback. Please try again later.';
+    feedbackStatus.className = 'feedback-status error-message';
+  } finally {
+    submitButton.disabled = false;
+  }
+}
+
+// Simple email validation function
+function validateEmail(email) {
+  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return re.test(email);
 }
