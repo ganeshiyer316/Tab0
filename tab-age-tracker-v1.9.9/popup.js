@@ -585,31 +585,10 @@ function createOrUpdateTrendChart(chartData, ctx) {
 }
 
 function openDetailView() {
-  // Use the existing openWebDashboard function that includes all data passing logic
-  // that previously worked in v1.9.8
+  // We need to open options.html which has the tabs for Overview, Details, Settings, Export
   
-  // Get current data
-  chrome.storage.local.get(['tabData', 'tabHistory', 'peakTabCount'], (data) => {
-    // Get settings
-    chrome.storage.local.get(['settings'], (settingsData) => {
-      const settings = settingsData.settings || {};
-      
-      // Convert the data to a base64 string
-      const dataString = JSON.stringify(data);
-      const encodedData = btoa(encodeURIComponent(dataString));
-      
-      // Create the URL with data and server URL parameters
-      let dashboardUrl = chrome.runtime.getURL(`/dashboard.html?data=${encodedData}`);
-      
-      // Add server URL if available
-      if (settings.serverUrl) {
-        dashboardUrl += `&serverUrl=${encodeURIComponent(settings.serverUrl)}`;
-      }
-      
-      // Open the dashboard in a new tab with all the required data
-      chrome.tabs.create({ url: dashboardUrl });
-    });
-  });
+  // Open the options page directly
+  chrome.runtime.openOptionsPage();
 }
 
 /**
