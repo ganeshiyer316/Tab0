@@ -13,6 +13,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   
   const viewDetailsButton = document.getElementById('viewDetails');
   const openOptionsButton = document.getElementById('openOptions');
+  
+  // Track popup opened event if analytics are available
+  if (typeof trackEvent === 'function') {
+    trackEvent('Engagement', 'Popup Opened', 'Extension Popup');
+  }
+  
+  // Add analytics tracking to buttons
+  if (viewDetailsButton) {
+    viewDetailsButton.addEventListener('click', () => {
+      if (typeof trackEvent === 'function') {
+        trackEvent('Navigation', 'Click', 'View Details Button');
+      }
+    });
+  }
 
   // Load the latest tab data
   const tabData = await loadTabData();
