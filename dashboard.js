@@ -1340,6 +1340,8 @@ function submitFeedback() {
     const feedbackTextarea = document.getElementById('feedbackText');
     const feedbackStatus = document.getElementById('feedbackStatus');
     const submitButton = document.getElementById('submitFeedbackBtn');
+    const feedbackForm = document.getElementById('feedbackForm');
+    const successDisplay = document.getElementById('feedbackSuccessDisplay');
     
     // Get values
     const email = emailInput.value.trim();
@@ -1383,11 +1385,49 @@ function submitFeedback() {
             feedbackTextarea.value = '';
             
             // Show success message
-            feedbackStatus.textContent = data.message || 'Feedback submitted successfully!';
-            feedbackStatus.className = 'feedback-status success-message';
-            
-            // Show message notification
-            showMessage('Thank you for your feedback!');
+            if (successDisplay) {
+                // Hide the form
+                feedbackForm.style.display = 'none';
+                
+                // Show success message
+                let successMessage = `
+                    <div class="feedback-success">
+                        <h3>Thank you for your feedback!</h3>
+                        <p>${data.message}</p>
+                    </div>
+                    <button id="submitAnotherBtn" class="button feedback-button">Submit Another Feedback</button>
+                `;
+                
+                // If there's a Google Sheets URL, add a note about it
+                if (data.sheet_url) {
+                    successMessage += `
+                        <div class="admin-note">
+                            <small>Admin note: Feedback is stored in 
+                            <a href="${data.sheet_url}" target="_blank">this Google Sheet</a></small>
+                        </div>
+                    `;
+                }
+                
+                successDisplay.innerHTML = successMessage;
+                successDisplay.style.display = 'block';
+                
+                // Add event listener to the "Submit Another" button
+                const submitAnotherBtn = document.getElementById('submitAnotherBtn');
+                if (submitAnotherBtn) {
+                    submitAnotherBtn.addEventListener('click', function() {
+                        // Hide success display and show form again
+                        successDisplay.style.display = 'none';
+                        feedbackForm.style.display = 'block';
+                    });
+                }
+            } else {
+                // Fallback if the success display element doesn't exist
+                feedbackStatus.textContent = data.message || 'Feedback submitted successfully!';
+                feedbackStatus.className = 'feedback-status success-message';
+                
+                // Show message notification
+                showMessage('Thank you for your feedback!');
+            }
         } else {
             throw new Error(data.message || 'Failed to submit feedback');
         }
