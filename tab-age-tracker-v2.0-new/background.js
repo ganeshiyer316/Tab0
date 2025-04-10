@@ -1,6 +1,16 @@
+// Import analytics functions
+import { trackEvent } from './config.js';
+
 // Initialize the extension when installed
 chrome.runtime.onInstalled.addListener(async () => {
   console.log('Tab Age Tracker extension installed');
+  
+  // Track installation event
+  try {
+    trackEvent('Lifecycle', 'Install', 'Extension Installed');
+  } catch (error) {
+    console.error('Error tracking installation event:', error);
+  }
   
   // Initialize storage with empty data
   const initialData = {

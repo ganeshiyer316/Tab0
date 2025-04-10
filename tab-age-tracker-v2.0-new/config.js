@@ -1,47 +1,59 @@
 /**
  * Configuration file for Tab Age Tracker
- * Contains shared configuration settings across different components
+ * Contains settings and initialization for analytics
  */
 
-// Replace GA_MEASUREMENT_ID with your actual Google Analytics measurement ID
-const GA_MEASUREMENT_ID = 'GA_MEASUREMENT_ID';
+// Google Analytics Measurement ID - Replace with your actual measurement ID
+const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX';
 
-// Google Analytics configuration
-function initializeAnalytics() {
-  // Only run in browser context
-  if (typeof window !== 'undefined') {
-    // Check if script is already loaded
-    if (!document.querySelector('script[src*="googletagmanager"]')) {
-      const gaScript = document.createElement('script');
-      gaScript.async = true;
-      gaScript.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
-      document.head.appendChild(gaScript);
-    }
+/**
+ * Initialize Google Analytics
+ */
+export function initializeAnalytics() {
+    // Add Google Analytics script dynamically
+    const gaScript = document.createElement('script');
+    gaScript.async = true;
+    gaScript.src = `https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`;
+    document.head.appendChild(gaScript);
     
+    // Initialize dataLayer and gtag function
     window.dataLayer = window.dataLayer || [];
     function gtag(){dataLayer.push(arguments);}
     gtag('js', new Date());
     gtag('config', GA_MEASUREMENT_ID);
     
-    // Make gtag available globally
+    // Make gtag function globally available
     window.gtag = gtag;
-  }
+    
+    console.log('Analytics initialized with Measurement ID:', GA_MEASUREMENT_ID);
 }
 
-// Track events in Google Analytics
-function trackEvent(category, action, label = null, value = null) {
-  try {
-    if (typeof window !== 'undefined' && window.gtag) {
-      window.gtag('event', action, {
-        'event_category': category,
-        'event_label': label,
-        'value': value
-      });
+/**
+ * Track an event in Google Analytics
+ * @param {string} category - Event category (e.g., 'Engagement', 'Navigation')
+ * @param {string} action - Event action (e.g., 'Click', 'Submit')
+ * @param {string} label - Event label (optional)
+ * @param {number} value - Event value (optional)
+ */
+export function trackEvent(category, action, label = null, value = null) {
+    if (typeof gtag !== 'function') {
+        console.warn('Analytics not initialized. Event not tracked:', category, action, label);
+        return;
     }
-  } catch (e) {
-    console.error('Error tracking event:', e);
-  }
+    
+    const eventParams = {
+        event_category: category,
+        event_action: action
+    };
+    
+    if (label) {
+        eventParams.event_label = label;
+    }
+    
+    if (value !== null && !isNaN(value)) {
+        eventParams.value = value;
+    }
+    
+    gtag('event', action, eventParams);
+    console.log('Event tracked:', category, action, label, value);
 }
-
-// Export the functions for use in other components
-// Note: In Chrome extension context, this is accessible globally
