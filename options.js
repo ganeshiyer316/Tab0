@@ -522,23 +522,33 @@ function setupEventListeners() {
   const ageFilter = document.getElementById('ageFilter');
   const sortOption = document.getElementById('sortOption');
   
-  searchInput.addEventListener('input', applyFilters);
-  ageFilter.addEventListener('change', applyFilters);
-  sortOption.addEventListener('change', applyFilters);
+  if (searchInput && ageFilter && sortOption) {
+    searchInput.addEventListener('input', applyFilters);
+    ageFilter.addEventListener('change', applyFilters);
+    sortOption.addEventListener('change', applyFilters);
+  }
   
   // Settings form
   const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-  saveSettingsBtn.addEventListener('click', saveSettings);
+  if (saveSettingsBtn) {
+    saveSettingsBtn.addEventListener('click', saveSettings);
+  }
   
   const resetPeakBtn = document.getElementById('resetPeakBtn');
-  resetPeakBtn.addEventListener('click', resetPeakTabCount);
+  if (resetPeakBtn) {
+    resetPeakBtn.addEventListener('click', resetPeakTabCount);
+  }
   
   const clearDataBtn = document.getElementById('clearDataBtn');
-  clearDataBtn.addEventListener('click', clearAllData);
+  if (clearDataBtn) {
+    clearDataBtn.addEventListener('click', clearAllData);
+  }
   
   // Old tabs check button
   const checkOldTabsBtn = document.getElementById('checkOldTabsBtn');
-  checkOldTabsBtn.addEventListener('click', checkOldTabs);
+  if (checkOldTabsBtn) {
+    checkOldTabsBtn.addEventListener('click', checkOldTabs);
+  }
   
   // Feedback form submission
   const submitFeedbackBtn = document.getElementById('submitFeedbackBtn');
@@ -546,20 +556,17 @@ function setupEventListeners() {
     submitFeedbackBtn.addEventListener('click', submitFeedback);
   }
   
-  // Web Dashboard buttons
+  // Web Dashboard button
   const openWebDashboardBtn = document.getElementById('openWebDashboardBtn');
-  openWebDashboardBtn.addEventListener('click', openWebDashboard);
+  if (openWebDashboardBtn) {
+    openWebDashboardBtn.addEventListener('click', openWebDashboard);
+  }
   
-  const exportToWebDashboardBtn = document.getElementById('exportToWebDashboardBtn');
-  exportToWebDashboardBtn.addEventListener('click', exportToWebDashboard);
-  
-  // Server dashboard buttons
+  // Server sync button (if exists)
   const syncWithServerBtn = document.getElementById('syncWithServerBtn');
-  syncWithServerBtn.addEventListener('click', syncWithServer);
-  
-  // Import button
-  const importJsonBtn = document.getElementById('importJsonBtn');
-  importJsonBtn.addEventListener('click', importTabsFromJson);
+  if (syncWithServerBtn) {
+    syncWithServerBtn.addEventListener('click', syncWithServer);
+  }
 }
 
 // Function to manually check for old tabs
@@ -1001,6 +1008,11 @@ async function submitFeedback() {
   const feedbackTextarea = document.getElementById('feedbackText');
   const feedbackStatus = document.getElementById('feedbackStatus');
   const submitButton = document.getElementById('submitFeedbackBtn');
+  const feedbackForm = document.querySelector('.feedback-form');
+  const successContainer = document.getElementById('feedbackSuccessContainer');
+  const successMessage = document.getElementById('feedbackSuccessMessage');
+  const feedbackSheetLink = document.getElementById('feedbackSheetLink');
+  const googleSheetLink = document.getElementById('googleSheetLink');
   
   // Get values
   const email = emailInput.value.trim();
@@ -1053,12 +1065,34 @@ async function submitFeedback() {
       emailInput.value = '';
       feedbackTextarea.value = '';
       
-      // Show success message
-      feedbackStatus.textContent = data.message || 'Feedback submitted successfully!';
-      feedbackStatus.className = 'feedback-status success-message';
+      // Hide the form and show success message
+      feedbackForm.style.display = 'none';
       
-      // Show message notification
-      showMessage('Thank you for your feedback!');
+      // Set success message and show success container
+      successMessage.textContent = 'Your feedback has been submitted successfully.';
+      successContainer.style.display = 'block';
+      
+      // Set up the Google Sheet link if available from the response
+      if (data.sheetUrl) {
+        googleSheetLink.href = data.sheetUrl;
+        feedbackSheetLink.style.display = 'block';
+      } else {
+        // Default Google Sheet URL (can be updated with the correct one)
+        googleSheetLink.href = 'https://docs.google.com/spreadsheets/d/your-google-sheet-id';
+        feedbackSheetLink.style.display = 'block';
+      }
+      
+      // Set up the "Submit Another Feedback" button
+      const submitAnotherBtn = document.getElementById('submitAnotherFeedbackBtn');
+      submitAnotherBtn.addEventListener('click', () => {
+        successContainer.style.display = 'none';
+        feedbackForm.style.display = 'block';
+        feedbackStatus.textContent = '';
+        feedbackStatus.className = 'feedback-status';
+      });
+      
+      // Also show a toast message
+      showMessage('Thanks for submitting your feedback!');
     } else {
       throw new Error(data.message || 'Failed to submit feedback');
     }
