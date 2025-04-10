@@ -561,6 +561,12 @@ function setupEventListeners() {
   // Import button
   const importJsonBtn = document.getElementById('importJsonBtn');
   importJsonBtn.addEventListener('click', importTabsFromJson);
+  
+  // Feedback submission button
+  const submitFeedbackBtn = document.getElementById('submitFeedbackBtn');
+  if (submitFeedbackBtn) {
+    submitFeedbackBtn.addEventListener('click', submitFeedback);
+  }
 }
 
 // Function to manually check for old tabs
@@ -632,7 +638,7 @@ async function applyFilters() {
   
   // Apply sorting
   switch (sortValue) {
-    case 'age-desc':
+    case 'age-desc': // Oldest first
       filteredTabs.sort((a, b) => {
         // Handle null/undefined createdAt values - treat them as oldest
         if (!a.createdAt) return -1; // a is "older" (undefined date)
@@ -640,11 +646,12 @@ async function applyFilters() {
         return new Date(a.createdAt) - new Date(b.createdAt);
       });
       break;
-    case 'age-asc':
+    case 'age-asc': // Newest first
       filteredTabs.sort((a, b) => {
         // Handle null/undefined createdAt values - treat them as oldest
-        if (!a.createdAt) return 1;  // a is "older" (undefined date)
-        if (!b.createdAt) return -1; // b is "older" (undefined date)
+        if (!a.createdAt) return 1;  // a is "older" (undefined date) so it goes last
+        if (!b.createdAt) return -1; // b is "older" (undefined date) so it goes last
+        // Reverse the comparison to sort newest first
         return new Date(b.createdAt) - new Date(a.createdAt);
       });
       break;
@@ -957,6 +964,86 @@ function openWebDashboard() {
     // Open the web dashboard in a new tab
     chrome.tabs.create({ url: dashboardUrl });
   });
+}
+
+// Function to submit user feedback
+async function submitFeedback() {
+  try {
+    const feedbackEmail = document.getElementById('feedbackEmail').value.trim();
+    const feedbackText = document.getElementById('feedbackText').value.trim();
+    const statusEl = document.getElementById('feedbackStatus');
+    
+    // Validate input
+    if (!feedbackText) {
+      statusEl.textContent = 'Please enter your feedback before submitting.';
+      statusEl.style.color = '#dc3545';
+      return;
+    }
+    
+    // Validate email if provided
+    if (feedbackEmail && !validateEmail(feedbackEmail)) {
+      statusEl.textContent = 'Please enter a valid email address.';
+      statusEl.style.color = '#dc3545';
+      return;
+    }
+    
+    statusEl.textContent = 'Submitting feedback...';
+    statusEl.style.color = '#007bff';
+    
+    // Track feedback submission with analytics
+    if (typeof trackEvent === 'function') {
+      trackEvent('user_engagement', 'submit_feedback');
+    }
+    
+    // Get the server URL from settings
+    const settings = await new Promise(resolve => {
+      chrome.storage.local.get('settings', resolve);
+    });
+    
+    const serverUrl = (settings.settings && settings.settings.serverUrl) || 'https://tab-age-tracker.replit.app';
+    
+    // Send to server
+    const response = await fetch(`${serverUrl}/submit_feedback`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: feedbackEmail,
+        feedback: feedbackText,
+        version: chrome.runtime.getManifest().version,
+        timestamp: new Date().toISOString()
+      })
+    });
+    
+    if (!response.ok) {
+      throw new Error(`Server responded with status: ${response.status}`);
+    }
+    
+    // Clear form and show success message
+    document.getElementById('feedbackEmail').value = '';
+    document.getElementById('feedbackText').value = '';
+    
+    statusEl.textContent = 'Feedback submitted successfully! Thank you for helping improve Tab Age Tracker.';
+    statusEl.style.color = '#28a745';
+    
+    // Clear success message after 5 seconds
+    setTimeout(() => {
+      statusEl.textContent = '';
+    }, 5000);
+    
+  } catch (error) {
+    console.error('Error submitting feedback:', error);
+    const statusEl = document.getElementById('feedbackStatus');
+    statusEl.textContent = 'Failed to submit feedback. Please try again later.';
+    statusEl.style.color = '#dc3545';
+  }
+}
+
+// Email validation helper function
+function validateEmail(email) {
+  const re = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+  return re.test(email.toLowerCase());
 }
 
 // Function to export data directly to the web dashboard
