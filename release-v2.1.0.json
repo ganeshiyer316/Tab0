@@ -1,0 +1,16 @@
+{
+    "version": "2.1.0",
+    "date": "2025-04-10",
+    "name": "Google Analytics Integration",
+    "changes": [
+        "Added Google Analytics integration to track extension usage",
+        "Added event tracking for key user interactions",
+        "Created centralized config.js for analytics tracking",
+        "Added server sync tracking for improved reliability",
+        "Added old tab notification tracking to measure effectiveness",
+        "Enhanced error handling for analytics tracking"
+    ],
+    "bug_fixes": [
+        "Fixed version number detection for automatic updates"
+    ]
+}

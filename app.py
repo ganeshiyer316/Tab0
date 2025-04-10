@@ -52,16 +52,39 @@ def get_latest_version_info():
     try:
         # Get a list of all release files
         import glob
+        import re
         release_files = glob.glob('release-v*.json')
         
         if not release_files:
+            app.logger.warning("No release files found, using default values")
             return {'version': '2.1.0', 'date': '2025-04-10', 'changes': []}
-            
-        # Sort release files by version number (assuming format release-vX.Y.json or release-vX.Y.Z.json)
-        release_files.sort(key=lambda x: [int(n) if n.isdigit() else n for n in x.replace('release-v', '').replace('.json', '').split('.')])
+        
+        # Parse versions more carefully
+        version_pattern = re.compile(r'release-v(\d+)\.(\d+)(?:\.(\d+))?\.json')
+        
+        # Create a list of (filename, version_tuple) pairs
+        versioned_files = []
+        for filename in release_files:
+            match = version_pattern.match(filename)
+            if match:
+                # Extract version numbers, default to 0 for patch if not present
+                major = int(match.group(1))
+                minor = int(match.group(2))
+                patch = int(match.group(3) or 0)
+                versioned_files.append((filename, (major, minor, patch)))
+            else:
+                app.logger.warning(f"Couldn't parse version from filename: {filename}")
+        
+        # Sort by version tuple (major, minor, patch)
+        versioned_files.sort(key=lambda x: x[1])
+        
+        if not versioned_files:
+            app.logger.warning("No valid versioned files found")
+            return {'version': '2.1.0', 'date': '2025-04-10', 'changes': []}
         
         # Get the latest release file
-        latest_release_file = release_files[-1]
+        latest_release_file = versioned_files[-1][0]
+        app.logger.info(f"Found latest release file: {latest_release_file}")
         
         # Read the release file
         with open(latest_release_file, 'r') as f:
@@ -79,14 +102,55 @@ def home():
         # Get the latest version info
         latest_version = get_latest_version_info()
         version = latest_version.get('version', '2.1.0')
+        name = latest_version.get('name', 'Google Analytics Integration')
+        changes = latest_version.get('changes', [])
+        bug_fixes = latest_version.get('bug_fixes', [])
         
         # Read index.html
         with open('index.html', 'r') as f:
             html_content = f.read()
             
         # Update version information automatically
-        html_content = html_content.replace('Download v2.1 GOOGLE', f'Download v{version} GOOGLE')
+        html_content = html_content.replace('Download v2.1 GOOGLE', f'Download v{version} {name.upper()}')
         html_content = html_content.replace('<strong>LATEST UPDATE:</strong> v2.1', f'<strong>LATEST UPDATE:</strong> v{version}')
+        
+        # If we can find the What's New section for the latest version, update it with the contents from the JSON file
+        whats_new_marker = f"<h2>What's New in v{version.split('.')[0]}.{version.split('.')[1]} (Latest)</h2>"
+        changes_list = ""
+        
+        # Generate HTML list items for changes
+        if changes:
+            for change in changes:
+                changes_list += f'                <li><strong>{change.split(" - ")[0] if " - " in change else change}</strong>'
+                if " - " in change:
+                    changes_list += f' - {change.split(" - ", 1)[1]}'
+                changes_list += '</li>\n'
+        
+        # Add bug fixes if any
+        if bug_fixes:
+            for fix in bug_fixes:
+                changes_list += f'                <li><strong>Fixed:</strong> {fix}</li>\n'
+        
+        # If we have changes, try to find and replace the existing What's New section
+        if changes_list:
+            # Find position of the latest what's new section heading
+            whats_new_pos = html_content.find(f"<h2>What's New in v2.1 (Latest)</h2>")
+            if whats_new_pos != -1:
+                # Find the end of the current list
+                list_start = html_content.find("<ul>", whats_new_pos) + 4
+                list_end = html_content.find("</ul>", list_start)
+                
+                # Replace the list content
+                if list_start != -1 and list_end != -1:
+                    # Replace the existing list with our new changes
+                    html_content = html_content[:list_start] + "\n" + changes_list + "            " + html_content[list_end:]
+                    
+                    # Update the heading if version changed
+                    if version != "2.1":
+                        html_content = html_content.replace(
+                            f"<h2>What's New in v2.1 (Latest)</h2>", 
+                            f"<h2>What's New in v{version} (Latest)</h2>"
+                        )
         
         return html_content
     except Exception as e:
