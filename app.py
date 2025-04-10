@@ -47,10 +47,52 @@ class TabDetail(db.Model):
 with app.app_context():
     db.create_all()
 
+def get_latest_version_info():
+    """Get the latest version information from release JSON files"""
+    try:
+        # Get a list of all release files
+        import glob
+        release_files = glob.glob('release-v*.json')
+        
+        if not release_files:
+            return {'version': '2.1.0', 'date': '2025-04-10', 'changes': []}
+            
+        # Sort release files by version number (assuming format release-vX.Y.json or release-vX.Y.Z.json)
+        release_files.sort(key=lambda x: [int(n) if n.isdigit() else n for n in x.replace('release-v', '').replace('.json', '').split('.')])
+        
+        # Get the latest release file
+        latest_release_file = release_files[-1]
+        
+        # Read the release file
+        with open(latest_release_file, 'r') as f:
+            release_info = json.load(f)
+            
+        return release_info
+    except Exception as e:
+        app.logger.error(f"Error getting latest version info: {str(e)}")
+        return {'version': '2.1.0', 'date': '2025-04-10', 'changes': []}
+
 @app.route('/')
 def home():
     """Home page redirects to index.html"""
-    return send_from_directory('.', 'index.html')
+    try:
+        # Get the latest version info
+        latest_version = get_latest_version_info()
+        version = latest_version.get('version', '2.1.0')
+        
+        # Read index.html
+        with open('index.html', 'r') as f:
+            html_content = f.read()
+            
+        # Update version information automatically
+        html_content = html_content.replace('Download v2.1 GOOGLE', f'Download v{version} GOOGLE')
+        html_content = html_content.replace('<strong>LATEST UPDATE:</strong> v2.1', f'<strong>LATEST UPDATE:</strong> v{version}')
+        
+        return html_content
+    except Exception as e:
+        app.logger.error(f"Error rendering home page: {str(e)}")
+        # Fallback to static file if something goes wrong
+        return send_from_directory('.', 'index.html')
 
 @app.route('/website/<path:path>')
 def serve_website(path):
@@ -67,33 +109,53 @@ def download_extension():
     """Download the latest version of the extension
     Accepts query parameters for cache busting but ignores them
     """
-    # Get the version from query parameter or default to the latest
-    version = request.args.get('v', '2.1')
-    
-    # Map of version names to file names
-    version_map = {
-        '2.1': 'tab-age-tracker-v2.1.zip',
-        '2.0': 'tab-age-tracker-v2.0.zip',
-        '1.9.9': 'tab-age-tracker-v1.9.9.zip',
-        '1.9.8': 'tab-age-tracker-v1.9.8.zip',
-        '1.9.7': 'tab-age-tracker-v1.9.7.zip',
-        '1.9.6': 'tab-age-tracker-v1.9.6.zip',
-        '1.9.5': 'tab-age-tracker-v1.9.5.zip',
-        '1.9.4': 'tab-age-tracker-v1.9.4.zip',
-        '1.9.3': 'tab-age-tracker-v1.9.3.zip',
-        '1.9.2-fixed-search': 'tab-age-tracker-v1.9.2-fixed-search.zip',
-        '1.9.2-fixed': 'tab-age-tracker-v1.9.2-fixed.zip',
-        '1.9.2': 'tab-age-tracker-v1.9.2.zip',
-        '1.9.1': 'tab-age-tracker-v1.9.1.zip',
-        '1.9': 'tab-age-tracker-v1.9.zip',
-        '1.8': 'tab-age-tracker-v1.8.zip',
-        '1.7': 'tab-age-tracker-v1.7.zip'
-    }
-    
-    # Get the file name or default to the latest version
-    file_name = version_map.get(version, 'tab-age-tracker-v2.1.zip')
-    
-    return send_from_directory('.', file_name, as_attachment=True)
+    try:
+        # Get latest version info
+        latest_version_info = get_latest_version_info()
+        latest_version = latest_version_info.get('version', '2.1.0')
+        latest_version_short = '.'.join(latest_version.split('.')[:2])  # Convert 2.1.0 to 2.1
+        
+        # Get the version from query parameter or default to the latest
+        version = request.args.get('v', latest_version_short)
+        
+        # Build version map dynamically
+        version_map = {}
+        import glob
+        zip_files = glob.glob('tab-age-tracker-v*.zip')
+        
+        for zip_file in zip_files:
+            # Extract version from filename (tab-age-tracker-v1.9.9.zip -> 1.9.9)
+            file_version = zip_file.replace('tab-age-tracker-v', '').replace('.zip', '')
+            # Create mapping (1.9.9 -> tab-age-tracker-v1.9.9.zip)
+            version_map[file_version] = zip_file
+        
+        # Add backward compatibility mappings (2.1.0 -> 2.1)
+        for v in list(version_map.keys()):
+            if len(v.split('.')) > 2:
+                short_v = '.'.join(v.split('.')[:2])
+                if short_v not in version_map:
+                    version_map[short_v] = version_map[v]
+        
+        # Get the file name or default to the latest version
+        latest_zip = f'tab-age-tracker-v{latest_version}.zip'
+        file_name = version_map.get(version, latest_zip)
+        
+        # Ensure the file exists, if not fall back to checking if the formatted version exists
+        if not os.path.exists(file_name):
+            formatted_file = f'tab-age-tracker-v{version}.zip'
+            if os.path.exists(formatted_file):
+                file_name = formatted_file
+            else:
+                # If nothing else works, use the latest version
+                file_name = latest_zip
+                
+        app.logger.info(f"Downloading extension version: {version}, file: {file_name}")
+        return send_from_directory('.', file_name, as_attachment=True)
+        
+    except Exception as e:
+        app.logger.error(f"Error in download_extension: {str(e)}")
+        # Fall back to a known good version if anything goes wrong
+        return send_from_directory('.', 'tab-age-tracker-v2.1.zip', as_attachment=True)
 
 @app.route('/api/import-data', methods=['POST'])
 def import_data():
