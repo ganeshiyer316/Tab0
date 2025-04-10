@@ -440,3 +440,76 @@ canvas {
 .tab-content {
   width: 100%;
 }
+
+/* Feedback section */
+.feedback-form {
+  max-width: 800px;
+  margin: 20px 0;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 8px;
+}
+
+.form-group small {
+  display: block;
+  color: #666;
+  font-size: 12px;
+  margin-top: 5px;
+}
+
+.form-group input[type="email"],
+.form-group textarea {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.feedback-status {
+  padding: 0 10px;
+  font-size: 14px;
+}
+
+.feedback-info {
+  margin-top: 30px;
+  padding: 15px;
+  background-color: #f0f8ff;
+  border-left: 4px solid #4a90e2;
+  border-radius: 3px;
+}
+
+.feedback-info h3 {
+  margin-top: 0;
+  color: #2c3e50;
+}
+
+.success-message {
+  color: #28a745;
+}
+
+.error-message {
+  color: #dc3545;
+}

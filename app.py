@@ -386,6 +386,57 @@ def suggest_tab_groups():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/submit-feedback', methods=['POST'])
+def submit_feedback():
+    """Handle feedback submission and store in a file (to be integrated with Google Sheets)"""
+    from datetime import datetime
+    import json
+    
+    try:
+        # Get feedback data from request
+        data = request.json
+        email = data.get('email', '')
+        feedback = data.get('feedback', '')
+        current_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        
+        # For debugging
+        app.logger.info(f"Received feedback - Email: {email}, Date: {current_date}")
+        
+        # Store feedback in a file for now
+        feedback_entry = {
+            'email': email,
+            'feedback': feedback,
+            'date': current_date
+        }
+        
+        try:
+            # Try to append to existing feedback file
+            with open('feedback_data.json', 'r') as f:
+                feedback_data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            # Create new feedback data if file doesn't exist or is invalid
+            feedback_data = []
+        
+        # Add new feedback and save
+        feedback_data.append(feedback_entry)
+        with open('feedback_data.json', 'w') as f:
+            json.dump(feedback_data, f, indent=2)
+            
+        # You would add Google Sheets integration here using the Google Sheets API
+        # This will be implemented once we have the necessary API keys
+        
+        return jsonify({
+            'status': 'success',
+            'message': 'Feedback received! Thank you for helping improve Tab Age Tracker.'
+        })
+    
+    except Exception as e:
+        app.logger.error(f"Error submitting feedback: {str(e)}")
+        return jsonify({
+            'status': 'error',
+            'message': f'An error occurred: {str(e)}'
+        }), 500
+
 def categorize_tabs_by_age(tabs):
     """Categorize tabs by age"""
     now = datetime.utcnow()
