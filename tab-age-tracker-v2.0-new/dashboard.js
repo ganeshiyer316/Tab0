@@ -17,25 +17,10 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeCharts();
     
     // Add event listeners
-    document.getElementById('importBtn')?.addEventListener('click', importData);
-    document.getElementById('searchInput')?.addEventListener('input', filterTabs);
-    document.getElementById('categoryFilter')?.addEventListener('change', filterTabs);
-    document.getElementById('sortOption')?.addEventListener('change', filterTabs);
-    document.getElementById('submitFeedbackBtn')?.addEventListener('click', submitFeedback);
-    
-    // Check for search parameter in URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const searchQuery = urlParams.get('search');
-    
-    if (searchQuery) {
-        // Set the search input field value
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            searchInput.value = searchQuery;
-            // Trigger the search filter
-            filterTabs();
-        }
-    }
+    document.getElementById('importBtn').addEventListener('click', importData);
+    document.getElementById('searchInput').addEventListener('input', filterTabs);
+    document.getElementById('categoryFilter').addEventListener('change', filterTabs);
+    document.getElementById('sortOption').addEventListener('change', filterTabs);
 });
 
 /**
@@ -123,6 +108,37 @@ function processImportedData(data) {
  * Update the dashboard with the current tab data
  */
 function updateDashboard() {
+    // Check for URL parameters first
+    const urlParams = new URLSearchParams(window.location.search);
+    const searchParam = urlParams.get('search');
+    
+    // If we have a search parameter, set it in the search box and trigger filtering
+    if (searchParam) {
+        const searchInput = document.getElementById('searchInput');
+        if (searchInput) {
+            searchInput.value = searchParam;
+            // We'll trigger filtering after data is loaded
+        }
+    }
+    
+    // Check for stored search query in chrome.storage (for chrome extension context)
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+        try {
+            chrome.storage.local.get(['lastSearchQuery'], (result) => {
+                if (result.lastSearchQuery && !searchParam) {
+                    const searchInput = document.getElementById('searchInput');
+                    if (searchInput) {
+                        searchInput.value = result.lastSearchQuery;
+                        // Clear the stored query
+                        chrome.storage.local.remove(['lastSearchQuery']);
+                    }
+                }
+            });
+        } catch (error) {
+            console.log('Not in extension context, or error accessing chrome.storage:', error);
+        }
+    }
+    
     // Fetch distribution data from server
     fetch('/api/stats/distribution')
         .then(response => response.json())
@@ -174,6 +190,14 @@ function updateDashboard() {
             
             // Update summary statistics
             updateSummaryStats(data);
+            
+            // Apply search filter if present in URL
+            const searchParam = new URLSearchParams(window.location.search).get('search');
+            if (searchParam) {
+                setTimeout(() => {
+                    filterTabs(); // This will apply the search that was set in the input earlier
+                }, 100);
+            }
         })
         .catch(error => {
             console.error("Error fetching distribution data:", error);
@@ -246,6 +270,14 @@ function updateDashboard() {
                     categories: categories,
                     total: tabData.length
                 });
+                
+                // Apply search filter if present in URL
+                const searchParam = new URLSearchParams(window.location.search).get('search');
+                if (searchParam) {
+                    setTimeout(() => {
+                        filterTabs(); // This will apply the search that was set in the input earlier
+                    }, 100);
+                }
             }
         });
 }
@@ -284,9 +316,6 @@ function updateSummaryStats(distributionData) {
         document.getElementById('unknownPercent').textContent = 
             `(${Math.round((categories.unknown || 0) / total * 100)}%)`;
     }
-    
-    // Update oldest tabs section
-    displayOldestTabs();
 }
 
 /**
@@ -906,11 +935,10 @@ function populateTabsTable() {
  * Filter tabs based on search input and category filter
  */
 function filterTabs() {
-    const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
     const categoryFilter = document.getElementById('categoryFilter').value;
     const sortOption = document.getElementById('sortOption').value;
     const tableBody = document.getElementById('tabsList') || document.querySelector('#tabs-table tbody');
-    const searchStatusElem = document.getElementById('searchStatus');
     
     if (!tableBody) return; // Exit if no table body found
     
@@ -918,12 +946,6 @@ function filterTabs() {
     let rows = Array.from(tableBody.getElementsByTagName('tr'));
     if (rows.length === 1 && rows[0].cells.length === 1 && rows[0].cells[0].colSpan === 4) {
         return; // Only has a "no data" row, nothing to filter
-    }
-    
-    // Reset search status
-    if (searchStatusElem) {
-        searchStatusElem.textContent = '';
-        searchStatusElem.style.display = 'none';
     }
     
     // Create a new array with row data for sorting
@@ -942,31 +964,7 @@ function filterTabs() {
         const url = urlCell.textContent.toLowerCase();
         const categoryText = ageCell.textContent.toLowerCase();
         
-        // Extract domain for more accurate searching
-        let domain = '';
-        try {
-            if (url.includes('://')) {
-                domain = new URL(url).hostname.toLowerCase();
-            }
-        } catch (e) {
-            // URL parsing failed, use the full URL
-        }
-        
-        let matchesSearch = true;
-        
-        if (searchTerm) {
-            // Split search into words for AND search (all words must match somewhere)
-            const searchWords = searchTerm.split(/\s+/).filter(word => word.length > 0);
-            
-            if (searchWords.length > 0) {
-                matchesSearch = searchWords.every(word => 
-                    title.includes(word) || 
-                    url.includes(word) || 
-                    domain.includes(word)
-                );
-            }
-        }
-        
+        const matchesSearch = title.includes(searchTerm) || url.includes(searchTerm);
         const matchesCategory = categoryFilter === 'all' || 
             (categoryFilter === 'today' && categoryText.includes('today')) ||
             (categoryFilter === 'week' && (categoryText.includes('day') || categoryText.includes('week'))) ||
@@ -978,8 +976,6 @@ function filterTabs() {
         rowsData.push({
             row: row,
             title: title,
-            url: url,
-            domain: domain,
             createdDate: createdCell.textContent,
             visible: matchesSearch && matchesCategory
         });
@@ -1001,13 +997,8 @@ function filterTabs() {
                 // Handle unknown dates - treat them as oldest
                 if (a.createdDate.includes('Unknown')) return 1; 
                 if (b.createdDate.includes('Unknown')) return -1;
-                
-                // Properly convert to date objects for comparison
-                const dateA = a.createdDate !== 'Unknown' ? new Date(a.createdDate) : new Date(0);
-                const dateB = b.createdDate !== 'Unknown' ? new Date(b.createdDate) : new Date(0);
-                
-                // Compare dates (newest first)
-                return dateB - dateA;
+                // Compare dates
+                return new Date(b.createdDate) - new Date(a.createdDate);
             });
             break;
         case 'title': // By title
@@ -1018,39 +1009,10 @@ function filterTabs() {
     // Reattach sorted rows to the table with appropriate visibility
     tableBody.innerHTML = ''; // Clear table body
     
-    // Count visible rows and update search status
-    const visibleRows = rowsData.filter(data => data.visible).length;
-    const totalRows = rowsData.length;
+    // Check if there are any visible rows
+    const hasVisibleRows = rowsData.some(data => data.visible);
     
-    // Update clear button visibility
-    const searchInput = document.getElementById('searchInput');
-    const clearButton = document.getElementById('clearSearch');
-    
-    if (clearButton) {
-        clearButton.style.display = searchTerm ? 'block' : 'none';
-        
-        // Set up clear button if not already done
-        if (!clearButton.hasAttribute('data-initialized')) {
-            clearButton.setAttribute('data-initialized', 'true');
-            clearButton.addEventListener('click', function() {
-                searchInput.value = '';
-                clearButton.style.display = 'none';
-                filterTabs();
-            });
-        }
-    }
-    
-    // Update search status
-    if (searchStatusElem) {
-        if (searchTerm) {
-            searchStatusElem.textContent = `Found ${visibleRows} matching tab${visibleRows !== 1 ? 's' : ''} out of ${totalRows} total`;
-            searchStatusElem.style.display = 'block';
-        } else {
-            searchStatusElem.style.display = 'none';
-        }
-    }
-    
-    if (visibleRows === 0) {
+    if (!hasVisibleRows) {
         // Create a "no results" row
         const noDataRow = document.createElement('tr');
         const noDataCell = document.createElement('td');
@@ -1240,174 +1202,4 @@ function extractDateFromURL(url) {
         console.warn("Error extracting date from URL:", e);
         return null;
     }
-}
-
-/**
- * Display the top 5 oldest tabs
- */
-function displayOldestTabs() {
-    const container = document.getElementById('oldestTabsContainer');
-    
-    // Clear the container
-    container.innerHTML = '';
-    
-    if (!tabData || tabData.length === 0) {
-        container.innerHTML = '<p>No tab data available. Please sync your data from the extension.</p>';
-        return;
-    }
-    
-    // Process tabs to calculate age consistently
-    const processedTabs = tabData.map(tab => {
-        const processed = {...tab};
-        
-        // Handle missing created date
-        if (!processed.createdAt) {
-            // Try to extract date from URL
-            const extractedDate = extractDateFromURL(processed.url);
-            if (extractedDate) {
-                processed.extractedDate = extractedDate;
-                processed.ageSource = 'url';
-                processed.ageDays = getDaysSince(extractedDate.toISOString());
-            } else {
-                processed.ageSource = 'unknown';
-                processed.ageDays = Number.MAX_SAFE_INTEGER; // Treat unknown as oldest
-            }
-        } else {
-            processed.ageSource = 'created';
-            processed.ageDays = getDaysSince(processed.createdAt);
-        }
-        
-        return processed;
-    });
-    
-    // Sort tabs by age (oldest first, unknown age at the end)
-    const sortedTabs = [...processedTabs].sort((a, b) => {
-        // If both have unknown age, sort by title
-        if (a.ageSource === 'unknown' && b.ageSource === 'unknown') {
-            return a.title.localeCompare(b.title);
-        }
-        
-        // Put unknown age at the end
-        if (a.ageSource === 'unknown') return 1;
-        if (b.ageSource === 'unknown') return -1;
-        
-        // Otherwise sort by age in days (descending)
-        return b.ageDays - a.ageDays;
-    });
-    
-    // Take the top 5 oldest tabs
-    const oldestTabs = sortedTabs.slice(0, 5);
-    
-    // Create HTML for each tab
-    oldestTabs.forEach(tab => {
-        const tabElement = document.createElement('div');
-        tabElement.className = 'top-tab-item';
-        
-        // Create age display
-        let ageDisplay = '';
-        if (tab.ageSource === 'unknown') {
-            ageDisplay = 'Unknown Age';
-        } else {
-            ageDisplay = formatAge(tab.ageDays);
-            if (tab.ageSource === 'url') {
-                ageDisplay += ' (from URL)';
-            }
-        }
-        
-        // Create tab HTML
-        tabElement.innerHTML = `
-            <div class="top-tab-content">
-                <div class="top-tab-title">${sanitize(truncateString(tab.title, 60))}</div>
-                <div class="top-tab-url">${sanitize(truncateString(tab.url, 80))}</div>
-            </div>
-            <div class="top-tab-age">${ageDisplay}</div>
-        `;
-        
-        container.appendChild(tabElement);
-    });
-    
-    // Add a message if no tabs were found
-    if (oldestTabs.length === 0) {
-        container.innerHTML = '<p>No tab data available. Please sync your data from the extension.</p>';
-    }
-}
-
-/**
- * Submit user feedback to the server
- */
-function submitFeedback() {
-    const emailInput = document.getElementById('feedbackEmail');
-    const feedbackTextarea = document.getElementById('feedbackText');
-    const feedbackStatus = document.getElementById('feedbackStatus');
-    const submitButton = document.getElementById('submitFeedbackBtn');
-    
-    // Get values
-    const email = emailInput.value.trim();
-    const feedback = feedbackTextarea.value.trim();
-    
-    // Validate
-    if (!feedback) {
-        feedbackStatus.textContent = 'Please enter your feedback before submitting.';
-        feedbackStatus.className = 'feedback-status error-message';
-        return;
-    }
-    
-    // Optional email validation
-    if (email && !validateEmail(email)) {
-        feedbackStatus.textContent = 'Please enter a valid email address.';
-        feedbackStatus.className = 'feedback-status error-message';
-        return;
-    }
-    
-    // Show loading state
-    submitButton.disabled = true;
-    feedbackStatus.textContent = 'Submitting feedback...';
-    feedbackStatus.className = 'feedback-status';
-    
-    // Send feedback to server
-    fetch('/api/submit-feedback', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            email: email,
-            feedback: feedback
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            // Clear form
-            emailInput.value = '';
-            feedbackTextarea.value = '';
-            
-            // Show success message
-            feedbackStatus.textContent = data.message || 'Feedback submitted successfully!';
-            feedbackStatus.className = 'feedback-status success-message';
-            
-            // Show message notification
-            showMessage('Thank you for your feedback!');
-        } else {
-            throw new Error(data.message || 'Failed to submit feedback');
-        }
-    })
-    .catch(error => {
-        console.error('Error submitting feedback:', error);
-        feedbackStatus.textContent = 'Failed to submit feedback. Please try again later.';
-        feedbackStatus.className = 'feedback-status error-message';
-    })
-    .finally(() => {
-        submitButton.disabled = false;
-    });
-}
-
-/**
- * Simple email validation function
- * @param {string} email - Email to validate
- * @returns {boolean} - Whether the email is valid
- */
-function validateEmail(email) {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
 }

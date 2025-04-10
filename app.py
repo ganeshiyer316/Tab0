@@ -11,6 +11,10 @@ from collections import defaultdict
 import re
 from urllib.parse import urlparse
 
+# Import Google Sheets API libraries
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
+
 app = Flask(__name__, static_folder='.')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

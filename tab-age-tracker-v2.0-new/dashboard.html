@@ -156,78 +156,6 @@
             margin-top: 0;
             color: #2196F3;
         }
-        
-        /* Top 5 oldest tabs styling */
-        .top-tabs-container {
-            margin-top: 15px;
-        }
-        
-        .top-tab-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            margin-bottom: 10px;
-            background-color: #f9f9f9;
-            border-radius: 6px;
-            border-left: 4px solid #e74c3c;
-            transition: background-color 0.2s;
-        }
-        
-        .top-tab-item:hover {
-            background-color: #f0f0f0;
-        }
-        
-        .top-tab-content {
-            flex: 1;
-            overflow: hidden;
-        }
-        
-        .top-tab-title {
-            font-weight: bold;
-            margin-bottom: 5px;
-            color: #333;
-        }
-        
-        .top-tab-url {
-            color: #666;
-            font-size: 0.9em;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        
-        .top-tab-age {
-            min-width: 100px;
-            text-align: right;
-            font-weight: bold;
-            color: #e74c3c;
-        }
-        
-        /* Feedback section styling */
-        .feedback-section {
-            border: 1px solid #eee;
-            transition: all 0.3s ease;
-        }
-        .feedback-section:hover {
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        }
-        .feedback-status {
-            font-weight: bold;
-            min-height: 24px;
-        }
-        .success-message {
-            color: #4CAF50;
-        }
-        .error-message {
-            color: #f44336;
-        }
-        #submitFeedbackBtn {
-            background-color: #4CAF50;
-        }
-        #submitFeedbackBtn:hover {
-            background-color: #45a049;
-        }
     </style>
 </head>
 <body>
@@ -295,11 +223,6 @@
             <canvas id="tabChangesChart"></canvas>
         </div>
         
-        <h2>Top 5 Oldest Tabs</h2>
-        <div id="oldestTabsContainer" class="top-tabs-container">
-            <p>Loading oldest tabs...</p>
-        </div>
-        
         <h2>Suggested Tab Groups</h2>
         <p>Based on your browsing patterns, here are some suggested tab groups:</p>
         
@@ -309,28 +232,20 @@
         
         <h2>Current Tabs</h2>
         <p>Search and filter your tabs:</p>
-        <div class="search-filter-container" style="display: flex; margin-bottom: 15px; align-items: center; flex-wrap: wrap;">
-            <div class="search-box" style="position: relative; margin-right: 15px; margin-bottom: 10px; flex: 1;">
-                <input type="text" id="searchInput" placeholder="Search by title, URL or domain" style="padding: 10px; width: 100%; min-width: 250px; border-radius: 4px; border: 1px solid #ccc;">
-                <button id="clearSearch" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #999; cursor: pointer; display: none;">✕</button>
-            </div>
-            <div style="display: flex; flex-wrap: wrap;">
-                <select id="categoryFilter" style="padding: 8px; margin-right: 10px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc;">
-                    <option value="all">All Categories</option>
-                    <option value="today">Today</option>
-                    <option value="week">This Week</option>
-                    <option value="month">This Month</option>
-                    <option value="older">Older</option>
-                    <option value="unknown">Unknown Age</option>
-                </select>
-                <select id="sortOption" style="padding: 8px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc;">
-                    <option value="age-desc">Oldest First</option>
-                    <option value="age-asc">Newest First</option>
-                    <option value="title">By Title</option>
-                </select>
-            </div>
-        </div>
-        <div id="searchStatus" style="margin-bottom: 15px; color: #555; font-style: italic; display: none;"></div>
+        <input type="text" id="searchInput" placeholder="Search by title or URL" style="padding: 8px; width: 300px; margin-right: 10px;">
+        <select id="categoryFilter" style="padding: 8px; margin-right: 10px;">
+            <option value="all">All Tabs</option>
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="older">Older</option>
+            <option value="unknown">Unknown Age</option>
+        </select>
+        <select id="sortOption" style="padding: 8px;">
+            <option value="age-desc">Oldest First</option>
+            <option value="age-asc">Newest First</option>
+            <option value="title">By Title</option>
+        </select>
         
         <table class="tabs-table" id="tabs-table">
             <thead>
@@ -348,27 +263,6 @@
             </tbody>
         </table>
         
-        <h2>Feedback</h2>
-        <div class="feedback-section" style="margin-top: 20px; padding: 25px; background: #f9f9f9; border-radius: 8px;">
-            <p>We'd love to hear your thoughts on Tab Age Tracker! How has it helped you manage your tabs? What features would you like to see?</p>
-            
-            <div style="margin-top: 15px;">
-                <div style="margin-bottom: 15px;">
-                    <label for="feedbackEmail" style="display: block; margin-bottom: 5px; font-weight: bold;">Email (optional):</label>
-                    <input type="email" id="feedbackEmail" placeholder="Your email address" style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc;">
-                </div>
-                
-                <div style="margin-bottom: 15px;">
-                    <label for="feedbackText" style="display: block; margin-bottom: 5px; font-weight: bold;">Your Feedback:</label>
-                    <textarea id="feedbackText" rows="5" placeholder="Please share your thoughts, suggestions, or report issues..." style="width: 100%; padding: 10px; border-radius: 4px; border: 1px solid #ccc; resize: vertical;"></textarea>
-                </div>
-                
-                <div id="feedbackStatus" class="feedback-status" style="margin-top: 10px; padding: 8px 0;"></div>
-                
-                <button id="submitFeedbackBtn" class="button" style="margin-top: 10px;">Submit Feedback</button>
-            </div>
-        </div>
-
         <div style="margin-top: 30px; text-align: center;">
             <a href="/" class="button">Back to Home</a>
         </div>
