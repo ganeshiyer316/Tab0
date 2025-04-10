@@ -18,6 +18,13 @@
     
     <div class="search-container">
       <input type="text" id="searchInput" placeholder="Search tabs by title, URL or domain...">
+      <div id="searchResultsContainer" class="search-results-container" style="display: none;">
+        <div class="search-results-stats">
+          <span id="searchResultsCount">0</span> results found for "<span id="searchQueryText"></span>"
+          <button id="clearSearchButton" class="clear-search-button">Clear search</button>
+        </div>
+        <div id="searchResults" class="search-results-list"></div>
+      </div>
     </div>
 
     <div class="stats-overview">

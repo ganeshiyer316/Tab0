@@ -57,9 +57,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Add search on enter key press
     searchInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter' && this.value.trim().length > 0) {
-        // Go directly to the dashboard with the search filter
+        // Perform search locally first
         searchTabs(this.value.trim());
         e.preventDefault();
+      }
+    });
+    
+    // Add live search as you type
+    searchInput.addEventListener('input', function() {
+      // Only search if there's at least 2 characters
+      if (this.value.trim().length >= 2) {
+        searchTabs(this.value.trim(), false); // false = do not redirect to dashboard
+      } else {
+        // Hide search results if query is too short
+        const searchResultsContainer = document.getElementById('searchResultsContainer');
+        if (searchResultsContainer) {
+          searchResultsContainer.style.display = 'none';
+        }
       }
     });
     
@@ -85,10 +99,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         clearButton.addEventListener('click', function() {
           searchInput.value = '';
           clearButton.style.display = 'none';
+          
+          // Hide search results on clear
+          const searchResultsContainer = document.getElementById('searchResultsContainer');
+          if (searchResultsContainer) {
+            searchResultsContainer.style.display = 'none';
+          }
         });
       }
     } catch (clearButtonError) {
       console.error('Error setting up clear button:', clearButtonError);
+    }
+    
+    // Add event listener for the clear search button in the results
+    const clearSearchButton = document.getElementById('clearSearchButton');
+    if (clearSearchButton) {
+      clearSearchButton.addEventListener('click', function() {
+        searchInput.value = '';
+        clearButton.style.display = 'none';
+        
+        // Hide search results on clear
+        const searchResultsContainer = document.getElementById('searchResultsContainer');
+        if (searchResultsContainer) {
+          searchResultsContainer.style.display = 'none';
+        }
+      });
     }
   }
   
@@ -569,15 +604,148 @@ function openOptionsPage() {
  * Search for tabs by title, URL or domain
  * @param {string} query - The search query
  */
-function searchTabs(query) {
-  // This function is now simplified to just open the dashboard with search
+function searchTabs(query, redirectToDashboard = true) {
   const trimmedQuery = query?.trim();
   if (!trimmedQuery) {
     return;
   }
   
-  // Open the dashboard with a search filter
-  openWebDashboardWithSearch(trimmedQuery);
+  console.log('Searching tabs for:', trimmedQuery);
+  
+  // Perform local search in the popup
+  chrome.storage.local.get(['tabData'], (result) => {
+    const tabData = result.tabData || { tabs: [] };
+    const tabs = tabData.tabs || [];
+    
+    // Search in title and URL
+    const searchResults = tabs.filter(tab => {
+      const titleMatch = tab.title && tab.title.toLowerCase().includes(trimmedQuery.toLowerCase());
+      const urlMatch = tab.url && tab.url.toLowerCase().includes(trimmedQuery.toLowerCase());
+      return titleMatch || urlMatch;
+    });
+    
+    console.log(`Found ${searchResults.length} matches`);
+    
+    // Update the search results UI
+    const searchResultsContainer = document.getElementById('searchResultsContainer');
+    const searchResultsCount = document.getElementById('searchResultsCount');
+    const searchQueryText = document.getElementById('searchQueryText');
+    const searchResultsList = document.getElementById('searchResults');
+    
+    if (searchResultsContainer && searchResultsCount && searchQueryText && searchResultsList) {
+      // Set search info
+      searchResultsCount.textContent = searchResults.length;
+      searchQueryText.textContent = trimmedQuery;
+      
+      // Clear previous results
+      searchResultsList.innerHTML = '';
+      
+      // Show the container
+      searchResultsContainer.style.display = 'block';
+      
+      if (searchResults.length === 0) {
+        // No results
+        const noResults = document.createElement('div');
+        noResults.className = 'no-search-results';
+        noResults.textContent = 'No tabs matching your search. Try different keywords or check the dashboard for more options.';
+        noResults.style.padding = '12px';
+        noResults.style.color = '#666';
+        noResults.style.textAlign = 'center';
+        searchResultsList.appendChild(noResults);
+      } else {
+        // Add each result
+        const now = new Date();
+        const oneDay = 24 * 60 * 60 * 1000;
+        const oneWeek = 7 * oneDay;
+        const oneMonth = 30 * oneDay;
+        
+        searchResults.forEach(tab => {
+          const resultItem = document.createElement('div');
+          resultItem.className = 'search-result-item';
+          
+          // Create the favicon element
+          const favicon = document.createElement('img');
+          favicon.className = 'search-result-favicon';
+          favicon.src = tab.favIconUrl || 'icons/tab-icon-16.png'; // Fallback icon
+          favicon.onerror = function() {
+            this.src = 'icons/tab-icon-16.png'; // Use default if favicon fails to load
+          };
+          
+          // Create the content container
+          const content = document.createElement('div');
+          content.className = 'search-result-content';
+          
+          // Title
+          const title = document.createElement('div');
+          title.className = 'search-result-title';
+          title.textContent = tab.title || 'Untitled';
+          
+          // URL
+          const url = document.createElement('div');
+          url.className = 'search-result-url';
+          url.textContent = tab.url || '';
+          
+          content.appendChild(title);
+          content.appendChild(url);
+          
+          // Age label
+          const ageLabel = document.createElement('div');
+          ageLabel.className = 'search-result-age';
+          
+          // Determine age category
+          let ageText = 'Unknown';
+          let ageClass = 'unknown';
+          
+          if (tab.createdAt) {
+            const createdAt = new Date(tab.createdAt);
+            const age = now - createdAt;
+            
+            if (age < oneDay) {
+              ageText = 'Today';
+              ageClass = 'today';
+            } else if (age < oneWeek) {
+              ageText = '1-7d';
+              ageClass = 'week';
+            } else if (age < oneMonth) {
+              ageText = '8-30d';
+              ageClass = 'month';
+            } else {
+              ageText = '>30d';
+              ageClass = 'older';
+            }
+          }
+          
+          ageLabel.textContent = ageText;
+          ageLabel.classList.add(ageClass);
+          
+          // Append all elements
+          resultItem.appendChild(favicon);
+          resultItem.appendChild(content);
+          resultItem.appendChild(ageLabel);
+          
+          // Add click handler to navigate to the tab
+          resultItem.addEventListener('click', () => {
+            chrome.tabs.update(tab.id, { active: true }, () => {
+              // Also focus the window containing the tab
+              chrome.tabs.get(tab.id, tabInfo => {
+                chrome.windows.update(tabInfo.windowId, { focused: true });
+              });
+              
+              // Close the popup after selecting a tab
+              window.close();
+            });
+          });
+          
+          searchResultsList.appendChild(resultItem);
+        });
+      }
+    }
+  });
+  
+  // If redirect flag is true, also open the dashboard with search
+  if (redirectToDashboard) {
+    openWebDashboardWithSearch(trimmedQuery);
+  }
 }
 
 /**
