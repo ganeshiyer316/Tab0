@@ -12,16 +12,43 @@ let tabChangesChart = null;
 
 // Event listeners
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Google Analytics if available
+    if (typeof initializeAnalytics === 'function') {
+        console.log('Initializing Google Analytics for web dashboard...');
+        initializeAnalytics();
+        
+        // Track page view
+        if (typeof trackEvent === 'function') {
+            trackEvent('Navigation', 'Page View', 'Web Dashboard');
+        } else {
+            console.warn('trackEvent function not available');
+        }
+    } else {
+        console.warn('Google Analytics initialization function not found');
+    }
+    
     // Initialize when the page loads
     updateDashboard();
     initializeCharts();
     
     // Add event listeners
-    document.getElementById('importBtn')?.addEventListener('click', importData);
+    document.getElementById('importBtn')?.addEventListener('click', function() {
+        if (typeof trackEvent === 'function') {
+            trackEvent('Interaction', 'Click', 'Import Data Button');
+        }
+        importData();
+    });
+    
     document.getElementById('searchInput')?.addEventListener('input', filterTabs);
     document.getElementById('categoryFilter')?.addEventListener('change', filterTabs);
     document.getElementById('sortOption')?.addEventListener('change', filterTabs);
-    document.getElementById('submitFeedbackBtn')?.addEventListener('click', submitFeedback);
+    
+    document.getElementById('submitFeedbackBtn')?.addEventListener('click', function() {
+        if (typeof trackEvent === 'function') {
+            trackEvent('Engagement', 'Click', 'Submit Feedback Button');
+        }
+        submitFeedback();
+    });
     
     // Check for search parameter in URL
     const urlParams = new URLSearchParams(window.location.search);

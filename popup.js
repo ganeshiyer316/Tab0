@@ -2,6 +2,21 @@ document.addEventListener('DOMContentLoaded', async () => {
   try {
     console.log('DOMContentLoaded event fired');
     
+    // Initialize Google Analytics if available
+    if (typeof initializeAnalytics === 'function') {
+      console.log('Initializing Google Analytics...');
+      initializeAnalytics();
+      
+      // Track page view
+      if (typeof trackEvent === 'function') {
+        trackEvent('Engagement', 'Popup Opened', 'Extension Popup');
+      } else {
+        console.warn('trackEvent function not available');
+      }
+    } else {
+      console.warn('Google Analytics initialization function not found');
+    }
+    
     // Check if Chart.js is available
     const isChartAvailable = typeof Chart !== 'undefined';
     console.log('Chart library available:', isChartAvailable);
