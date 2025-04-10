@@ -1,0 +1,18 @@
+{
+  "version": "2.1.1",
+  "name": "UI & Analytics Fixes",
+  "date": "2025-04-10",
+  "changes": [
+    "Feedback UI - Added confirmation message after submission",
+    "Feedback UI - Widened text area for better usability",
+    "Admin - Added Google Sheet link for viewing submitted feedback",
+    "UI - Removed Export & Import Options section from the interface",
+    "Documentation - Added GOOGLE_ANALYTICS_SETUP.md guide"
+  ],
+  "bug_fixes": [
+    "Fixed Google Analytics initialization errors",
+    "Improved Content Security Policy for analytics integration",
+    "Fixed feedback submission flow",
+    "Improved error handling in all JavaScript files"
+  ]
+}
