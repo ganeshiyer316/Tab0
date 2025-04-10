@@ -40,16 +40,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     initTrendChart(tabData);
   }
   
-  // Set up event listeners
+  // Set up event listener for View Details button
   viewDetailsButton.addEventListener('click', openDetailView);
-  openOptionsButton.addEventListener('click', openOptionsPage);
-  document.getElementById('checkOldTabs').addEventListener('click', checkForOldTabs);
-  
-  // Add event listener for the web dashboard button if it exists
-  const webDashboardButton = document.getElementById('webDashboard');
-  if (webDashboardButton) {
-    webDashboardButton.addEventListener('click', openWebDashboard);
-  }
   
   // Set up search functionality
   const searchInput = document.getElementById('searchInput');
@@ -57,8 +49,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Add search on enter key press
     searchInput.addEventListener('keypress', function(e) {
       if (e.key === 'Enter' && this.value.trim().length > 0) {
-        // Perform search locally first
-        searchTabs(this.value.trim());
+        // Perform search locally only (don't redirect to dashboard)
+        searchTabs(this.value.trim(), false);
         e.preventDefault();
       }
     });
@@ -593,11 +585,8 @@ function createOrUpdateTrendChart(chartData, ctx) {
 }
 
 function openDetailView() {
-  chrome.tabs.create({ url: 'options.html#details' });
-}
-
-function openOptionsPage() {
-  chrome.runtime.openOptionsPage();
+  // Use the same functionality as the web dashboard instead of opening options page
+  openWebDashboard();
 }
 
 /**
