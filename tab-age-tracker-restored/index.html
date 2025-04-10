@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Tab Age Tracker Chrome Extension</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 30px;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2196F3;
+            margin-top: 0;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        h2 {
+            color: #555;
+            margin-top: 0;
+        }
+        ul, ol {
+            padding-left: 20px;
+        }
+        li {
+            margin-bottom: 10px;
+        }
+        .button {
+            display: inline-block;
+            background-color: #2196F3;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+            font-weight: bold;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #0d8bf2;
+        }
+        .features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        .feature {
+            flex: 1 1 200px;
+            padding: 15px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .feature h3 {
+            margin-top: 0;
+            color: #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tab Age Tracker Chrome Extension</h1>
+        
+        <p>This extension helps you track and manage your browser tabs by monitoring their age and providing analytics to help reduce tab clutter.</p>
+        
+        <div class="section">
+            <h2>Download Extension</h2>
+            <p>Click the button below to download the Tab Age Tracker extension package:</p>
+            <a href="/download-extension?v=1.9.9&t=20250410-search-in-popup" class="button" style="background-color: #4caf50; color: white;">Download v1.9.9 LOCAL SEARCH IN POPUP (.zip)</a><br><br>
+            <a href="/download-extension?v=1.9.8&t=20250409-search-ext" class="button" style="background-color: #888; color: white;">Download v1.9.8 (.zip)</a><br><br>
+            <a href="/download-extension?v=1.9.7&t=20250409-csp-fix" class="button" style="background-color: #888; color: white;">Download v1.9.7 (.zip)</a>
+            <p style="color: #4caf50; margin-top: 10px;"><strong>LATEST UPDATE:</strong> v1.9.9 adds local search results display directly in the popup without redirecting to the dashboard.</p>
+        </div>
+        
+        <div class="section">
+            <h2>Installation Instructions</h2>
+            <ol>
+                <li>Download the extension zip file using the button above</li>
+                <li>Extract the zip file to a folder on your computer</li>
+                <li>Open Chrome and navigate to <code>chrome://extensions</code></li>
+                <li>Enable "Developer mode" by toggling the switch in the top right corner</li>
+                <li>Click "Load unpacked" and select the folder where you extracted the extension files</li>
+                <li>The Tab Age Tracker extension should now be installed and visible in your browser toolbar</li>
+            </ol>
+        </div>
+        
+        <div class="section">
+            <h2>Web Dashboard</h2>
+            <p>Access our comprehensive web dashboard for detailed tab analytics and insights:</p>
+            <a href="/dashboard.html" class="button">Open Web Dashboard</a>
+            <p>The dashboard provides advanced visualizations and tab management tools not available in the popup view.</p>
+        </div>
+        
+        <div class="section" style="border-left: 4px solid #4CAF50;">
+            <h2>What's New in v1.9.9 (Latest)</h2>
+            <ul>
+                <li><strong>Local Search Results</strong> - Search results now display directly in the extension popup</li>
+                <li><strong>Simplified UI</strong> - Removed Options, Check Old Tabs, and Web Dashboard buttons</li>
+                <li><strong>Single Button Interface</strong> - Kept only "View Details" button styled green and centered</li>
+                <li><strong>Live Search Updates</strong> - Results update as you type (minimum 2 characters)</li>
+                <li><strong>Better User Experience</strong> - Find tabs without leaving the extension popup</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>What's New in v1.9.8</h2>
+            <ul>
+                <li><strong>Popup Search Functionality</strong> - Added search capability directly in the extension popup</li>
+                <li><strong>Search Parameter Pass-through</strong> - Automatically carries search terms from popup to dashboard</li>
+                <li><strong>Improved Content Security Policy</strong> - Maintains full CSP compliance for Chrome security requirements</li>
+                <li><strong>Enhanced User Experience</strong> - Streamlined workflow from extension to web dashboard</li>
+                <li><strong>Faster Tab Discovery</strong> - Find tabs more quickly with unified search across all interfaces</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>What's New in v1.9.7</h2>
+            <ul>
+                <li><strong>Complete CSP Compliance</strong> - Fully removed ALL inline styles in dashboard.html to comply with Content Security Policy</li>
+                <li><strong>Fixed Search Functionality</strong> - Fixed data structure in popup.js to correctly pass search parameters to dashboard.js</li>
+                <li><strong>Improved CSS Organization</strong> - Moved inline styles to proper CSS classes for better maintainability</li>
+                <li><strong>Enhanced Error Handling</strong> - Added detailed logging for debugging data transfer issues</li>
+                <li><strong>Better User Experience</strong> - Ensured consistent styling across all pages even with strict CSP</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>What's New in v1.9.6</h2>
+            <ul>
+                <li><strong>Fixed Search Functionality</strong> - Fixed search not showing results when viewing data in dashboard</li>
+                <li><strong>Improved Data Transfer</strong> - Enhanced data formatting between popup and dashboard</li>
+                <li><strong>Better Status Messages</strong> - Added clear status indicators when data is loaded successfully</li>
+                <li><strong>Enhanced Error Recovery</strong> - Improved error handling for URL parameter processing</li>
+                <li><strong>Perfect Chrome Compatibility</strong> - Maintains all security fixes from v1.9.5</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>What's New in v1.9.5 (Chrome Compatible)</h2>
+            <ul>
+                <li><strong>Complete Chrome Security Fix</strong> - Removed both 'unsafe-eval' AND 'unsafe-inline' from Content Security Policy for full Chrome compatibility</li>
+                <li><strong>Fixed Extension Loading</strong> - Resolved all issues with Chrome rejecting the extension due to CSP restrictions</li>
+                <li><strong>Enhanced Script Loading</strong> - Improved script loading to avoid CSP violations in all scenarios</li>
+                <li><strong>Improved Style Security</strong> - Removed inline styles to comply with strict CSP requirements</li>
+                <li><strong>Chart Reliability</strong> - Ensured charts load properly without requiring unsafe directives</li>
+                <li><strong>Error Handling</strong> - Added robust fallbacks to display data even when charts can't load</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>What's New in v1.9.4</h2>
+            <ul>
+                <li><strong>Chrome Security Fix</strong> - Removed 'unsafe-eval' from Content Security Policy for full Chrome compatibility</li>
+                <li><strong>Fixed Extension Loading</strong> - Resolved issues with Chrome rejecting the extension due to CSP restrictions</li>
+                <li><strong>Enhanced Script Loading</strong> - Improved script loading to avoid CSP violations in all scenarios</li>
+                <li><strong>Chart Reliability</strong> - Ensured charts load properly without requiring 'unsafe-eval' directives</li>
+                <li><strong>Error Handling</strong> - Added robust fallbacks to display data even when charts can't load</li>
+                <li><strong>Updated Documentation</strong> - Added guidance about Chrome's latest security requirements</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>What's New in v1.9.3</h2>
+            <ul>
+                <li><strong>Comprehensive Search Fix</strong> - Completely rebuilt search functionality for 100% reliability</li>
+                <li><strong>Content Security Policy Updates</strong> - Added proper CSP directives to ensure all features work correctly</li>
+                <li><strong>Enhanced Chart Loading System</strong> - Implemented multi-layer fallback system for charts with clear error messaging</li>
+                <li><strong>Local Storage Backup</strong> - Added backup storage for search queries if URL parameters fail</li>
+                <li><strong>Failsafe Dashboard Opening</strong> - Added smart timeout mechanism to ensure dashboard always opens even on errors</li>
+                <li><strong>Error Recovery System</strong> - Added robust error handling throughout all critical functions</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>What's New in v1.9.2</h2>
+            <ul>
+                <li><strong>Fixed Missing Icons</strong> - Fixed issue with missing icons folder in the extension package</li>
+                <li><strong>Robust Chart Loading</strong> - Added dynamic loading with fallbacks to ensure charts always display properly</li>
+                <li><strong>Enhanced Dashboard Integration</strong> - Fixed all issues with the "View Details in Web Dashboard" button</li>
+                <li><strong>Improved Search Reliability</strong> - Enhanced error handling for search functionality in the popup</li>
+                <li><strong>Comprehensive Debugging</strong> - Added extensive logging to help diagnose and fix any issues</li>
+                <li><strong>Improved UI Resilience</strong> - Better fallbacks when components fail to display properly</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>What's New in v1.9.1</h2>
+            <ul>
+                <li><strong>Fixed Search Functionality</strong> - Fixed search functionality in popup.js to properly redirect to the dashboard with search parameters</li>
+                <li><strong>Fixed Chart Visibility</strong> - Fixed chart visibility issue in Chrome extension by preloading Chart.js in the head of popup.html</li>
+                <li><strong>Fixed Dashboard Navigation</strong> - Fixed 'View Details in Web Dashboard' button to ensure proper URL construction</li>
+                <li><strong>Improved Error Handling</strong> - Added better error handling for service worker issues in background.js</li>
+                <li><strong>Enhanced Debugging</strong> - Added detailed logging to track URL navigation for easier troubleshooting</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>What's New in v1.9</h2>
+            <ul>
+                <li><strong>Improved Error Handling</strong> - Added comprehensive error handling throughout the extension to enhance stability</li>
+                <li><strong>Enhanced CSP Support</strong> - Updated content security policy for better compatibility with modern browsers</li>
+                <li><strong>Null Element Protection</strong> - Added null checks to prevent errors when DOM elements are not found</li>
+                <li><strong>Chart.js Integration Fix</strong> - Improved Chart.js integration to avoid rendering errors and display fallbacks</li>
+                <li><strong>Service Worker Compatibility</strong> - Fixed Service Worker (SW) issues for better background processing</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>What's New in v1.8</h2>
+            <ul>
+                <li><strong>Enhanced Search Functionality</strong> - Improved search capability in popup with instant filtering</li>
+                <li><strong>Domain-based Search</strong> - Advanced search that matches against titles, URLs, and domains</li>
+                <li><strong>Multi-word Search</strong> - Enhanced search with AND logic where all search terms must match</li>
+                <li><strong>Search UI Improvements</strong> - Added clear button and search result count display</li>
+                <li><strong>Improved Dashboard Integration</strong> - Better transition from popup search to dashboard with search parameters</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>What's New in v1.7</h2>
+            <ul>
+                <li><strong>Fixed Tab Sorting</strong> - Improved tab sorting functionality in the dashboard, particularly for "newest to oldest" sorting option</li>
+                <li><strong>Better Handling of Unknown Ages</strong> - Enhanced handling of unknown age tabs in sorting operations</li>
+                <li><strong>Improved Filter Functionality</strong> - More robust filtering and sorting for the tabs table</li>
+                <li><strong>Enhanced User Interface</strong> - Better feedback when no tabs match your search/filter criteria</li>
+                <li><strong>Performance Improvements</strong> - Optimized code for smoother performance</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>What's New in v1.6</h2>
+            <ul>
+                <li><strong>Enhanced Daily Progress Chart</strong> - Now shows maximum, average, and minimum tab counts with color-coded lines for better visualization</li>
+                <li><strong>Improved Tooltips</strong> - Added detailed tooltips explaining what each metric means in the Daily Progress chart</li>
+                <li><strong>Better Data Visualization</strong> - Updated charts with consistent styling and clearer legends</li>
+                <li><strong>UI Improvements</strong> - Enhanced dashboard layout and responsiveness</li>
+                <li><strong>Fixed URL Date Extraction</strong> - Improved accuracy of age detection from URLs for tabs without direct creation timestamps</li>
+            </ul>
+        </div>
+        
+        <div class="section">
+            <h2>Key Features</h2>
+            <div class="features">
+                <div class="feature">
+                    <h3>Tab Age Tracking</h3>
+                    <p>Tracks how long each tab has been open and categorizes them by age (Today, This Week, This Month, Older)</p>
+                </div>
+                <div class="feature">
+                    <h3>Visual Analytics</h3>
+                    <p>Interactive charts and visualizations to help you understand your tab usage patterns</p>
+                </div>
+                <div class="feature">
+                    <h3>Smart Grouping</h3>
+                    <p>Suggests tab groups based on website domains, content similarity, and age</p>
+                </div>
+                <div class="feature">
+                    <h3>Progress Tracking</h3>
+                    <p>Shows your progress toward reaching "Tab Zero" based on your peak tab count</p>
+                </div>
+                <div class="feature">
+                    <h3>URL Date Extraction</h3>
+                    <p>Intelligently extracts dates from URLs to improve age detection accuracy for tabs without direct creation timestamps</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
