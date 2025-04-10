@@ -585,8 +585,20 @@ function createOrUpdateTrendChart(chartData, ctx) {
 }
 
 function openDetailView() {
-  // Use the same functionality as the web dashboard instead of opening options page
-  openWebDashboard();
+  // Use the web dashboard but ensure we use the server URL or proper dashboard URL
+  chrome.storage.local.get(['settings'], (settingsData) => {
+    const settings = settingsData.settings || {};
+    const serverUrl = settings.serverUrl || 'https://tab-age-tracker.replit.app';
+    
+    // Create the dashboard URL 
+    const dashboardUrl = `${serverUrl}/dashboard.html`;
+    
+    // Open the dashboard in a new tab
+    chrome.tabs.create({ url: dashboardUrl });
+    
+    // Sync data with the server in the background
+    chrome.runtime.sendMessage({ action: 'syncData' });
+  });
 }
 
 /**
