@@ -3,13 +3,13 @@
  * Contains settings and initialization for analytics
  */
 
-// Google Analytics Measurement ID - Replace with your actual measurement ID
-const GA_MEASUREMENT_ID = 'G-XXXXXXXXXX';
+// Google Analytics Measurement ID
+const GA_MEASUREMENT_ID = 'G-TXDM9FWL7M';
 
 /**
  * Initialize Google Analytics
  */
-export function initializeAnalytics() {
+function initializeAnalytics() {
     // Add Google Analytics script dynamically
     const gaScript = document.createElement('script');
     gaScript.async = true;
@@ -35,7 +35,7 @@ export function initializeAnalytics() {
  * @param {string} label - Event label (optional)
  * @param {number} value - Event value (optional)
  */
-export function trackEvent(category, action, label = null, value = null) {
+function trackEvent(category, action, label = null, value = null) {
     if (typeof gtag !== 'function') {
         console.warn('Analytics not initialized. Event not tracked:', category, action, label);
         return;
