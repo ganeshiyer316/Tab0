@@ -1,7 +1,0 @@
-{
-  "tag_name": "v1.9",
-  "name": "Tab Age Tracker v1.9",
-  "body": "This release focuses on stability improvements and bug fixes, particularly related to chart rendering and error handling.\n\n### Improvements\n\n- **Improved Error Handling**: Added comprehensive error handling throughout the extension to enhance stability\n- **Enhanced CSP Support**: Updated content security policy for better compatibility with modern browsers\n- **Null Element Protection**: Added null checks to prevent errors when DOM elements are not found\n- **Chart.js Integration Fix**: Improved Chart.js integration to avoid rendering errors and display fallbacks\n- **Service Worker Compatibility**: Fixed Service Worker (SW) issues for better background processing\n\n### Bug Fixes\n\n- Fixed potential errors in chart rendering when invalid data is present\n- Improved handling of missing or invalid dates in tab data\n- Added error recovery mechanisms to maintain app functionality even when errors occur\n- Fixed issues with chart tooltips failing with invalid data\n- Enhanced error messages for better debugging",
-  "draft": false,
-  "prerelease": false
-}
