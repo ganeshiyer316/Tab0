@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tab Age Tracker - Web Dashboard</title>
+    <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Tab Age Tracker - Web Dashboard</h1>
+        
+        <div class="info-bar">
+            <p><strong>Status:</strong> This dashboard is waiting for data from the Tab Age Tracker extension. Install the extension and sync your data to see analytics.</p>
+            <a href="/" class="button">Back to Home</a>
+        </div>
+        
+        <h2>Summary Statistics</h2>
+        <div class="stats-container">
+            <div class="stat-card">
+                <h3>Current Tabs</h3>
+                <div class="stat-value">0</div>
+                <p>Total open tabs</p>
+            </div>
+            <div class="stat-card">
+                <h3>Peak Tab Count</h3>
+                <div class="stat-value">0</div>
+                <p>Maximum tabs observed</p>
+            </div>
+            <div class="stat-card">
+                <h3>Progress to Tab Zero</h3>
+                <div class="progress-container">
+                    <div class="progress-bar" style="width: 0%">0%</div>
+                </div>
+                <p>Based on your peak tab count</p>
+            </div>
+            <div class="stat-card">
+                <h3>Average Tab Age</h3>
+                <div class="stat-value">0</div>
+                <p>Days</p>
+            </div>
+        </div>
+        
+        <h2>Tab Age Distribution</h2>
+        <div class="chart-container">
+            <canvas id="ageDistributionChart"></canvas>
+        </div>
+        
+        <h2>Tab Count Trend</h2>
+        <div class="chart-container">
+            <canvas id="tabTrendChart"></canvas>
+        </div>
+        
+        <h2>Daily Progress</h2>
+        <p class="chart-description">
+            This chart shows the minimum, average, and maximum number of tabs you've had open each day.
+            <span class="tooltip">ℹ️
+                <span class="tooltip-text">
+                    <strong>Maximum (Red):</strong> The highest number of tabs open during the day<br>
+                    <strong>Average (Blue):</strong> The average number of tabs open throughout the day<br>
+                    <strong>Minimum (Green):</strong> The lowest number of tabs open during the day
+                </span>
+            </span>
+        </p>
+        <div class="chart-container">
+            <canvas id="dailyProgressChart"></canvas>
+        </div>
+        
+        <h2>Daily Tab Activity</h2>
+        <div class="chart-container">
+            <canvas id="tabChangesChart"></canvas>
+        </div>
+        
+        <h2>Top 5 Oldest Tabs</h2>
+        <div id="oldestTabsContainer" class="top-tabs-container">
+            <p>Loading oldest tabs...</p>
+        </div>
+        
+        <h2>Suggested Tab Groups</h2>
+        <p>Based on your browsing patterns, here are some suggested tab groups:</p>
+        
+        <div id="suggested-groups-container">
+            <p>No tab groups suggestions available. Please sync your data from the extension.</p>
+        </div>
+        
+        <h2>Current Tabs</h2>
+        <p>Search and filter your tabs:</p>
+        <div class="search-filter-container">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search by title, URL or domain">
+                <button id="clearSearch">✕</button>
+            </div>
+            <div class="filter-options">
+                <select id="categoryFilter">
+                    <option value="all">All Categories</option>
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="older">Older</option>
+                    <option value="unknown">Unknown Age</option>
+                </select>
+                <select id="sortOption">
+                    <option value="age-desc">Oldest First</option>
+                    <option value="age-asc">Newest First</option>
+                    <option value="title">By Title</option>
+                </select>
+            </div>
+        </div>
+        <div id="searchStatus"></div>
+        
+        <table class="tabs-table" id="tabs-table">
+            <thead>
+                <tr>
+                    <th>Title</th>
+                    <th>Age</th>
+                    <th>Created</th>
+                    <th>URL</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="4">No tab data available. Please sync your data from the extension.</td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <h2>Feedback</h2>
+        <div class="feedback-section">
+            <p>We'd love to hear your thoughts on Tab Age Tracker! How has it helped you manage your tabs? What features would you like to see?</p>
+            
+            <div class="feedback-form">
+                <div class="form-group">
+                    <label for="feedbackEmail">Email (optional):</label>
+                    <input type="email" id="feedbackEmail" placeholder="Your email address">
+                </div>
+                
+                <div class="form-group">
+                    <label for="feedbackText">Your Feedback:</label>
+                    <textarea id="feedbackText" rows="5" placeholder="Please share your thoughts, suggestions, or report issues..."></textarea>
+                </div>
+                
+                <div id="feedbackStatus" class="feedback-status"></div>
+                
+                <button id="submitFeedbackBtn" class="button">Submit Feedback</button>
+            </div>
+        </div>
+
+        <div class="back-link">
+            <a href="/" class="button">Back to Home</a>
+        </div>
+    </div>
+    
+    <script src="chart.js"></script>
+    <script src="dashboard.js"></script>
+    <script>
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDashboard();
+        });
+    </script>
+</body>
+</html>
