@@ -1,0 +1,23 @@
+{
+  "version": "2.1.2",
+  "name": "Security Enhanced Version (No Analytics)",
+  "date": "2025-04-10",
+  "changes": [
+    "Security Enhancement - Completely removed Google Analytics",
+    "Security Enhancement - Simplified Content Security Policy",
+    "Security Enhancement - Removed all external script sources",
+    "Feedback UI - Added confirmation message after submission",
+    "Text Area Enhancement - Widened feedback text area for better usability",
+    "Admin - Added Google Sheet link for viewing submitted feedback",
+    "UI - Removed Export & Import Options section from the interface",
+    "Documentation - Added security explanation in README.md"
+  ],
+  "bug_fixes": [
+    "Fixed Chrome installation errors caused by CSP restrictions",
+    "Removed Google Analytics entirely for maximum compatibility",
+    "Simplified security policy to ensure installation works in all environments",
+    "Fixed 'Newest First' sorting option that wasn't working properly",
+    "Removed unused export/import functions",
+    "Improved error handling in all JavaScript files"
+  ]
+}
