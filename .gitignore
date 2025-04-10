@@ -18,6 +18,8 @@ node_modules/
 # Ignore any sensitive information
 .env
 config.json
+client_secret.json
+feedback_data.json
 
 # Keep the latest extension version
 !tab-age-tracker-v1.7.zip
