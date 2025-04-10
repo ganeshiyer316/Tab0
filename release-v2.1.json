@@ -1,0 +1,16 @@
+{
+  "version": "2.1.0",
+  "name": "Tab Age Tracker",
+  "description": "Track and analyze the age of your open tabs to help reduce tab overload",
+  "download_url": "https://tab-age-tracker.replit.app/download-extension?v=2.1",
+  "release_notes": [
+    "Added Google Analytics integration to track extension usage.",
+    "Added event tracking for server data sync operations.",
+    "Added tracking for old tab notification events.",
+    "Added tracking for user interactions with notifications.",
+    "Centralized analytics configuration for easier management.",
+    "Fixed export/import structure in config.js file.",
+    "Enhanced error handling for analytics events."
+  ],
+  "release_date": "2025-04-10"
+}
