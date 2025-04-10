@@ -59,8 +59,8 @@ def get_latest_version_info():
             app.logger.warning("No release files found, using default values")
             return {'version': '2.1.0', 'date': '2025-04-10', 'changes': []}
         
-        # Parse versions more carefully
-        version_pattern = re.compile(r'release-v(\d+)\.(\d+)(?:\.(\d+))?\.json')
+        # Parse versions more carefully - handle both "release-v1.9.json" and "release-v1.9-fixed.json" formats
+        version_pattern = re.compile(r'release-v(\d+)\.(\d+)(?:\.(\d+))?(?:-[a-zA-Z0-9]+)?\.json')
         
         # Create a list of (filename, version_tuple) pairs
         versioned_files = []
@@ -73,7 +73,9 @@ def get_latest_version_info():
                 patch = int(match.group(3) or 0)
                 versioned_files.append((filename, (major, minor, patch)))
             else:
-                app.logger.warning(f"Couldn't parse version from filename: {filename}")
+                # Only log a warning if it's a standard release file format that we can't parse
+                if filename.startswith('release-v') and filename.endswith('.json'):
+                    app.logger.warning(f"Couldn't parse version from filename: {filename}")
         
         # Sort by version tuple (major, minor, patch)
         versioned_files.sort(key=lambda x: x[1])
@@ -174,52 +176,47 @@ def download_extension():
     Accepts query parameters for cache busting but ignores them
     """
     try:
-        # Get latest version info
-        latest_version_info = get_latest_version_info()
-        latest_version = latest_version_info.get('version', '2.1.0')
-        latest_version_short = '.'.join(latest_version.split('.')[:2])  # Convert 2.1.0 to 2.1
+        # Get the version from query parameter (default to 2.1 for safety)
+        requested_version = request.args.get('v', '2.1')
         
-        # Get the version from query parameter or default to the latest
-        version = request.args.get('v', latest_version_short)
-        
-        # Build version map dynamically
-        version_map = {}
+        # First, try the simplest approach - see if requested version exists
+        simple_filename = f'tab-age-tracker-v{requested_version}.zip'
+        if os.path.exists(simple_filename):
+            app.logger.info(f"Direct download found: {simple_filename}")
+            return send_from_directory('.', simple_filename, as_attachment=True)
+            
+        # Find newest ZIP file if requested version doesn't exist
         import glob
+        import re
+        
+        # Get all the version zip files
         zip_files = glob.glob('tab-age-tracker-v*.zip')
         
-        for zip_file in zip_files:
-            # Extract version from filename (tab-age-tracker-v1.9.9.zip -> 1.9.9)
-            file_version = zip_file.replace('tab-age-tracker-v', '').replace('.zip', '')
-            # Create mapping (1.9.9 -> tab-age-tracker-v1.9.9.zip)
-            version_map[file_version] = zip_file
+        if not zip_files:
+            app.logger.error("No extension ZIP files found!")
+            return jsonify({"error": "Extension files not found"}), 404
+            
+        # Use the latest v2.1.x zip file as the preferred default
+        v21_files = [f for f in zip_files if f.startswith('tab-age-tracker-v2.1')]
+        if v21_files:
+            # Sort to get the newest one if there are multiple
+            v21_files.sort(reverse=True)
+            app.logger.info(f"Using newest v2.1 file: {v21_files[0]}")
+            return send_from_directory('.', v21_files[0], as_attachment=True)
         
-        # Add backward compatibility mappings (2.1.0 -> 2.1)
-        for v in list(version_map.keys()):
-            if len(v.split('.')) > 2:
-                short_v = '.'.join(v.split('.')[:2])
-                if short_v not in version_map:
-                    version_map[short_v] = version_map[v]
-        
-        # Get the file name or default to the latest version
-        latest_zip = f'tab-age-tracker-v{latest_version}.zip'
-        file_name = version_map.get(version, latest_zip)
-        
-        # Ensure the file exists, if not fall back to checking if the formatted version exists
-        if not os.path.exists(file_name):
-            formatted_file = f'tab-age-tracker-v{version}.zip'
-            if os.path.exists(formatted_file):
-                file_name = formatted_file
-            else:
-                # If nothing else works, use the latest version
-                file_name = latest_zip
-                
-        app.logger.info(f"Downloading extension version: {version}, file: {file_name}")
-        return send_from_directory('.', file_name, as_attachment=True)
+        # If no v2.1 files found, return the newest zip in the entire collection
+        zip_files.sort(reverse=True)  
+        newest_file = zip_files[0]
+        app.logger.info(f"Using newest available file: {newest_file}")
+        return send_from_directory('.', newest_file, as_attachment=True)
         
     except Exception as e:
         app.logger.error(f"Error in download_extension: {str(e)}")
-        # Fall back to a known good version if anything goes wrong
-        return send_from_directory('.', 'tab-age-tracker-v2.1.zip', as_attachment=True)
+        # Return error message instead of incorrect file
+        return jsonify({
+            "error": f"Failed to download extension: {str(e)}",
+            "message": "Please try downloading directly or contact support."
+        }), 500
 
 @app.route('/api/import-data', methods=['POST'])
 def import_data():
