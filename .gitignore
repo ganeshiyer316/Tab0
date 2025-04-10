@@ -21,5 +21,7 @@ config.json
 client_secret.json
 feedback_data.json
 
-# Keep the latest extension version
+# Keep the latest extension versions
 !tab-age-tracker-v1.7.zip
+!tab-age-tracker-v2.0.zip
+!tab-age-tracker-v2.1.4.zip
