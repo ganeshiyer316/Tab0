@@ -799,122 +799,7 @@ async function clearAllData() {
   }
 }
 
-async function exportTabsToCsv() {
-  try {
-    const { tabData } = await new Promise((resolve) => {
-      chrome.storage.local.get(['tabData'], resolve);
-    });
-    
-    const tabs = tabData.tabs || [];
-    
-    if (tabs.length === 0) {
-      showError('No tab data to export.');
-      return;
-    }
-    
-    const csvContent = exportToCsv(tabs);
-    
-    // Create a download link
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tab-age-tracker-export-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    
-    // Clean up
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 0);
-    
-    showMessage('CSV exported successfully.');
-  } catch (error) {
-    showError('Failed to export CSV. Please try again.');
-  }
-}
-
-async function exportTabsToJson() {
-  try {
-    const data = await new Promise((resolve) => {
-      chrome.storage.local.get(['tabData', 'tabHistory', 'peakTabCount', 'settings'], resolve);
-    });
-    
-    if (!data.tabData || !data.tabData.tabs || data.tabData.tabs.length === 0) {
-      showError('No tab data to export.');
-      return;
-    }
-    
-    const jsonContent = JSON.stringify(data, null, 2);
-    
-    // Create a download link
-    const blob = new Blob([jsonContent], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `tab-age-tracker-export-${new Date().toISOString().split('T')[0]}.json`;
-    document.body.appendChild(a);
-    a.click();
-    
-    // Clean up
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 0);
-    
-    showMessage('JSON exported successfully.');
-  } catch (error) {
-    showError('Failed to export JSON. Please try again.');
-  }
-}
-
-async function importTabsFromJson() {
-  const fileInput = document.getElementById('importFileInput');
-  
-  if (!fileInput.files || fileInput.files.length === 0) {
-    showError('Please select a file to import.');
-    return;
-  }
-  
-  if (!confirm('Importing data will replace your current data. Are you sure you want to continue?')) {
-    return;
-  }
-  
-  try {
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-    
-    reader.onload = async (event) => {
-      try {
-        const jsonData = JSON.parse(event.target.result);
-        
-        // Validate the data
-        if (!jsonData.tabData || !Array.isArray(jsonData.tabData.tabs)) {
-          throw new Error('Invalid data format.');
-        }
-        
-        // Save to storage
-        await new Promise((resolve) => {
-          chrome.storage.local.set(jsonData, resolve);
-        });
-        
-        showMessage('Data imported successfully. Reloading page...');
-        
-        // Reload the page to refresh the data
-        setTimeout(() => {
-          location.reload();
-        }, 1500);
-      } catch (error) {
-        showError('Failed to parse the imported file. Please make sure it is a valid JSON export.');
-      }
-    };
-    
-    reader.readAsText(file);
-  } catch (error) {
-    showError('Failed to import data. Please try again.');
-  }
-}
+// These functions have been removed as part of v2.1.1 to remove the Export & Import Options section
 
 function getDefaultSettings() {
   return {
@@ -1091,6 +976,11 @@ async function submitFeedback() {
       // Set success message and show success container
       successMessage.textContent = 'Your feedback has been submitted successfully.';
       successContainer.style.display = 'block';
+      
+      // Track the feedback submission in analytics
+      if (typeof trackEvent === 'function') {
+        trackEvent('Interaction', 'Submit Feedback', 'Success')
+      }
       
       // Set up the Google Sheet link if available from the response
       if (data.sheetUrl) {
