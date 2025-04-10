@@ -27,7 +27,7 @@
       <button class="tab-button active" data-tab="dashboard">Dashboard</button>
       <button class="tab-button" data-tab="details">Details</button>
       <button class="tab-button" data-tab="settings">Settings</button>
-      <button class="tab-button" data-tab="export">Export</button>
+      <button class="tab-button" data-tab="feedback">Feedback</button>
     </nav>
     
     <div id="chart-fallback-message" style="display: none; padding: 10px; margin: 10px 0; background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; border-radius: 4px;">
@@ -185,56 +185,42 @@
       </div>
     </div>
 
-    <div class="tab-content" id="export" style="display:none;">
-      <h2>Export Tab Data</h2>
-      <p>Export your tab data for backup or analysis. The export will include tab URLs, titles, and age information.</p>
+    <div class="tab-content" id="feedback" style="display:none;">
+      <h2>Submit Feedback</h2>
+      <p>We're always looking to improve Tab Age Tracker. Please share your thoughts, suggestions, or report any issues.</p>
 
-      <div class="export-options">
-        <div class="export-option">
-          <h3>CSV Export</h3>
-          <p>Export as a CSV file that you can open in Excel or Google Sheets.</p>
-          <button id="exportCsvBtn" class="primary-button">Export to CSV</button>
+      <div class="feedback-form">
+        <div class="form-group">
+          <label for="feedbackEmail">Your Email (optional):</label>
+          <input type="email" id="feedbackEmail" placeholder="your.email@example.com" class="form-control">
+          <small>If you'd like us to follow up with you about your feedback</small>
         </div>
 
-        <div class="export-option">
-          <h3>JSON Export</h3>
-          <p>Export as a JSON file for programmatic use or advanced analysis.</p>
-          <button id="exportJsonBtn" class="primary-button">Export to JSON</button>
+        <div class="form-group">
+          <label for="feedbackText">Your Feedback:</label>
+          <textarea id="feedbackText" rows="6" class="form-control" placeholder="Share your experience, suggestions, or report bugs..."></textarea>
         </div>
-      </div>
 
-      <h2>Web Dashboard</h2>
-      <p>Open the web dashboard to view your tab analytics in a dedicated web page.</p>
-      <div class="export-option">
-        <h3>Interactive Web Dashboard</h3>
-        <p>View your tab analytics in a dedicated web dashboard with enhanced features.</p>
-        <button id="openWebDashboardBtn" class="highlight-button">Open Web Dashboard</button>
-        <button id="exportToWebDashboardBtn" class="primary-button">Export to Web Dashboard</button>
+        <div class="form-group">
+          <button id="submitFeedbackBtn" class="primary-button">Submit Feedback</button>
+          <span id="feedbackStatus" class="status-message"></span>
+        </div>
       </div>
       
-      <h2>Web Dashboard Server</h2>
-      <p>Configure web dashboard server settings for long-term trend analysis and tab grouping suggestions.</p>
-      <div class="settings-group">
-        <div class="setting-item checkbox">
-          <input type="checkbox" id="useServerDashboard">
-          <label for="useServerDashboard">Use server dashboard for trends and tab grouping suggestions</label>
+      <div class="export-section" style="margin-top: 40px; border-top: 1px solid #ddd; padding-top: 20px;">
+        <h2>Export & Import Options</h2>
+        <p>You can export your data for backup or import previously exported data.</p>
+        
+        <div class="export-options" style="display: flex; gap: 20px; margin-bottom: 20px;">
+          <button id="exportCsvBtn" class="secondary-button">Export to CSV</button>
+          <button id="exportJsonBtn" class="secondary-button">Export to JSON</button>
+          <button id="openWebDashboardBtn" class="highlight-button">Open Web Dashboard</button>
         </div>
         
-        <div class="setting-item">
-          <label for="serverUrl">Dashboard Server URL</label>
-          <input type="text" id="serverUrl" placeholder="https://tab-age-tracker.replit.app">
+        <div class="import-section">
+          <input type="file" id="importFileInput" accept=".json">
+          <button id="importJsonBtn" class="secondary-button">Import from JSON</button>
         </div>
-        
-        <div class="setting-actions">
-          <button id="syncWithServerBtn" class="secondary-button">Sync Data with Server Now</button>
-        </div>
-      </div>
-
-      <h2>Import Tab Data</h2>
-      <p>Import previously exported tab data. This will replace your current data.</p>
-      <div class="import-section">
-        <input type="file" id="importFileInput" accept=".json">
-        <button id="importJsonBtn" class="secondary-button">Import from JSON</button>
       </div>
     </div>
   </div>
