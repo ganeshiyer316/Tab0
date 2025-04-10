@@ -1,0 +1,18 @@
+{
+  "version": "1.9.9",
+  "name": "Tab Age Tracker",
+  "description": "A Chrome extension to track and analyze the age of your open tabs to help you reach tab zero.",
+  "changelog": [
+    "Added local search functionality in the popup",
+    "Removed Options, Check Old Tabs, and Web Dashboard buttons",
+    "Kept only 'View Details' button styled green and centered",
+    "Fixed 'View Details' button to properly open the options page with all tabs",
+    "Updated search to display results directly in the popup",
+    "Fixed search results display in the Chrome extension popup",
+    "Fixed navigation to use Chrome's built-in options page opening"
+  ],
+  "size": "1.0 MB",
+  "download_url": "tab-age-tracker-v1.9.9.zip",
+  "release_date": "2025-04-10",
+  "author": "ReachTabZero Team"
+}

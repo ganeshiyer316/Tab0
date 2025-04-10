@@ -64,10 +64,11 @@ def download_extension():
     Accepts query parameters for cache busting but ignores them
     """
     # Get the version from query parameter or default to the latest
-    version = request.args.get('v', '1.9.9')
+    version = request.args.get('v', '2.0')
     
     # Map of version names to file names
     version_map = {
+        '2.0': 'tab-age-tracker-v2.0.zip',
         '1.9.9': 'tab-age-tracker-v1.9.9.zip',
         '1.9.8': 'tab-age-tracker-v1.9.8.zip',
         '1.9.7': 'tab-age-tracker-v1.9.7.zip',
@@ -85,7 +86,7 @@ def download_extension():
     }
     
     # Get the file name or default to the latest version
-    file_name = version_map.get(version, 'tab-age-tracker-v1.9.9.zip')
+    file_name = version_map.get(version, 'tab-age-tracker-v2.0.zip')
     
     return send_from_directory('.', file_name, as_attachment=True)
 

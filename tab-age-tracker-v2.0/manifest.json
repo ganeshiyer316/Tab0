@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Tab Age Tracker",
+  "version": "2.0.0",
+  "description": "Track the age of your browser tabs and get insights into your tab usage habits",
+  "permissions": ["tabs", "storage", "alarms"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "generated-icon.png",
+      "48": "generated-icon.png",
+      "128": "generated-icon.png"
+    }
+  },
+  "options_page": "options.html",
+  "icons": {
+    "16": "generated-icon.png",
+    "48": "generated-icon.png",
+    "128": "generated-icon.png"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": ["options.html", "dashboard.html", "chart.js"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

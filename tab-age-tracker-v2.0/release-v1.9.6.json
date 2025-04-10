@@ -1,0 +1,13 @@
+{
+  "version": "1.9.6",
+  "name": "Tab Age Tracker v1.9.6",
+  "description": "Tab Age Tracker with fixed search when viewing data in dashboard",
+  "date": "2023-04-09",
+  "changes": [
+    "Fixed search functionality when using 'Search in Dashboard' from the extension",
+    "Added proper data formatting and handling between popup and dashboard",
+    "Improved status message to indicate when data is loaded successfully",
+    "Enhanced error handling for data parameter processing"
+  ],
+  "downloadUrl": "https://tab-age-tracker.replit.app/tab-age-tracker-v1.9.6.zip?cache=1"
+}

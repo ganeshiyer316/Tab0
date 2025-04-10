@@ -1,0 +1,8 @@
+{
+  "tag_name": "v1.8",
+  "name": "Tab Age Tracker v1.8",
+  "body": "## What's New in v1.8\n\n### Enhanced Search Functionality\n- 🔍 Improved search capability in popup with instant filtering\n- 🔎 Advanced search that matches against titles, URLs, and domains\n- ✨ Added clear button to search box for better UX\n- 📊 Added search result count display\n- 🔄 Enhanced search performance with multi-term (AND) search logic\n\n### UI Improvements\n- 💄 Redesigned search interface in both popup and dashboard\n- 🖌️ Cleaner styling for search elements and filters\n- 📱 Improved responsiveness of search controls\n- 🎯 Better visual feedback when performing search actions\n\n### Bug Fixes\n- 🐛 Fixed issues with search not working with special characters\n- 🔧 Improved reliability of opening dashboard with search parameters\n- 🧹 Fixed styling inconsistencies between popup and dashboard\n\n### Developer Notes\n- 📝 Code organization improvements for search-related functions\n- 📚 Better documentation for search functionality\n- 🧪 Improved error handling in search operations",
+  "draft": false,
+  "prerelease": true,
+  "generate_release_notes": true
+}
