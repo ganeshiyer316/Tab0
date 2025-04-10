@@ -656,10 +656,21 @@ async function applyFilters() {
       });
       break;
     case 'age-asc':
+      // This is the "Newest First" option 
       filteredTabs.sort((a, b) => {
+        // Track this sorting option for analytics
+        try {
+          if (typeof trackEvent === 'function') {
+            trackEvent('Interaction', 'Sort', 'Newest First');
+          }
+        } catch (e) { /* Ignore tracking errors */ }
+        
         // Handle null/undefined createdAt values - treat them as oldest
-        if (!a.createdAt) return 1;  // a is "older" (undefined date)
-        if (!b.createdAt) return -1; // b is "older" (undefined date)
+        if (!a.createdAt && !b.createdAt) return 0; // Both unknown, no change
+        if (!a.createdAt) return 1;  // a is older (unknown date goes last)
+        if (!b.createdAt) return -1; // b is older (unknown date goes last)
+        
+        // Sort newer first (larger timestamp at the top)
         return new Date(b.createdAt) - new Date(a.createdAt);
       });
       break;
@@ -1086,8 +1097,8 @@ async function submitFeedback() {
         googleSheetLink.href = data.sheetUrl;
         feedbackSheetLink.style.display = 'block';
       } else {
-        // Default Google Sheet URL (can be updated with the correct one)
-        googleSheetLink.href = 'https://docs.google.com/spreadsheets/d/your-google-sheet-id';
+        // Set Google Sheet URL to actual feedback spreadsheet 
+        googleSheetLink.href = 'https://docs.google.com/spreadsheets/d/1e_JZ7a0XJkGRnWt885CnDmXwK-bFSKm6q9UDjYx-iB0';
         feedbackSheetLink.style.display = 'block';
       }
       

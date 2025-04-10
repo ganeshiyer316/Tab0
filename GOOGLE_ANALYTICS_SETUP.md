@@ -1,64 +1,108 @@
-# Google Analytics Setup and Usage Guide
+# Google Analytics Setup Guide for Tab Age Tracker
 
-## Overview
-Tab Age Tracker includes Google Analytics integration to help track user behavior and improve the extension. This document explains how to access and interpret the analytics data.
+This guide explains how to access and analyze the Google Analytics data collected from Tab Age Tracker extension and web dashboard.
 
-## Accessing Google Analytics Data
+## Analytics Overview
 
-1. **Go to Google Analytics Dashboard**: 
-   - Visit [https://analytics.google.com/](https://analytics.google.com/)
-   - Sign in with the Google account associated with the tracking ID: `G-TXDM9FWL7M`
+Tab Age Tracker uses Google Analytics 4 (GA4) to collect anonymous usage data to help improve the user experience. The following events are tracked:
 
-2. **Navigate to the Tab Age Tracker Property**:
-   - In the GA dashboard, select the "Tab Age Tracker" property
-   - If you don't see it, you may need to request access from the property owner
+### Extension Events
+- Extension popup opened
+- Options page opened
+- Tab searches performed
+- Feedback submissions
+- Web dashboard access
+- Old tab notifications
+- Settings changes
 
-3. **View Reports**:
-   - **Real-time**: See who is currently using the extension
-   - **Acquisition**: Understand where your users are coming from
-   - **Engagement**: See how users interact with the extension
-   - **User**: Get insights into user demographics and behaviors
+### Web Dashboard Events
+- Dashboard page views
+- Tab sorting and filtering actions
+- Chart interactions
+- Feedback submissions
 
-## Key Metrics Being Tracked
+## Accessing Analytics Data
 
-The extension tracks the following events:
+1. Visit [Google Analytics](https://analytics.google.com/)
+2. Sign in with the Google account associated with the tracking ID: `G-W6JZET80BN`
+3. Select "Tab Age Tracker" from the account dropdown
 
-1. **Page Views**:
-   - Extension popup opening
-   - Options page views
-   - Web dashboard visits
+## Key Reports to Monitor
 
-2. **User Interactions**:
-   - Feedback submissions
-   - Search actions
-   - Tab management actions
+### 1. Real-time Dashboard
+- Shows current active users
+- Navigate to: Reports → Realtime
 
-3. **Feature Usage**:
-   - Feature adoption rates
-   - Time spent on different sections
+### 2. User Engagement Overview
+- Shows overall usage patterns
+- Navigate to: Reports → Engagement → Overview
 
-## Troubleshooting Analytics Issues
+### 3. Event Analysis
+- Shows specific user interactions
+- Navigate to: Reports → Engagement → Events
 
-If you notice that analytics aren't being properly tracked:
+### 4. User Demographics
+- Shows user locations and devices
+- Navigate to: Reports → User → Demographics
 
-1. **Check Browser Console**: Look for errors related to Google Analytics or tracking
-2. **Verify Tracking ID**: Ensure the config.js file contains the correct tracking ID
-3. **Check Content Security Policy**: The manifest.json should allow connections to Google Analytics domains
-4. **Disable Ad Blockers**: Some ad blockers might prevent analytics from loading
+## Understanding Key Metrics
+
+### DAU (Daily Active Users)
+- Found in: Reports → User → Overview
+- Shows how many unique users open the extension each day
+
+### Extension Usage Frequency
+- Found in: Reports → Engagement → Overview
+- Shows how often users interact with the extension
+
+### Most Common Actions
+- Found in: Reports → Engagement → Events
+- Shows the most frequent user actions
+
+### Retention Rate
+- Found in: Reports → User → Retention
+- Shows how many users continue using the extension over time
+
+## Custom Reports
+
+You can create custom reports to analyze specific aspects of user behavior:
+
+1. Navigate to "Explore" in the left sidebar
+2. Click "Create new exploration"
+3. Select dimensions (e.g., "Event name", "Page title") and metrics (e.g., "Event count", "Users")
+4. Apply any filters to focus on specific user segments
+
+## Event Naming Conventions
+
+Tab Age Tracker uses the following event naming conventions:
+
+- `engagement_popup_opened`: User opened the extension popup
+- `interaction_search_tabs`: User searched for tabs
+- `engagement_options_opened`: User opened the options page
+- `interaction_feedback_submit`: User submitted feedback
+- `interaction_sort_newest`: User sorted tabs by newest first
+- `interaction_sort_oldest`: User sorted tabs by oldest first
+- `notification_old_tabs`: Old tab notification was shown
+
+## Setting Up Analytics Alerts
+
+You can set up alerts to be notified of important changes in usage patterns:
+
+1. Navigate to "Admin" → "Data Studio" → "Custom Alerts"
+2. Click "Create"
+3. Configure alert conditions (e.g., significant drop in active users)
+4. Set up email notifications
 
 ## Privacy Considerations
 
-Tab Age Tracker's analytics implementation:
-- Does not track personal browsing data
-- Does not collect any personally identifiable information
-- Only tracks aggregated, anonymous usage patterns
-- Complies with GDPR and other privacy regulations
+Tab Age Tracker's analytics implementation respects user privacy:
 
-## Future Analytics Enhancements
+- No personally identifiable information (PII) is collected
+- No browsing history or tab URLs are collected
+- Only aggregate usage patterns and counts are tracked
+- No IP addresses are stored permanently
+- Data is stored securely in Google Analytics
 
-Consider implementing:
-- Custom dimensions for tracking user settings preferences
-- Goal tracking for "Tab Zero" progress
-- More detailed event tracking for specific features
+## Need Help?
 
-For additional support or questions about analytics implementation, please contact the development team.
+If you need assistance with Google Analytics for Tab Age Tracker, contact the developer at support@tabagetracker.com.
