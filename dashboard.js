@@ -1000,8 +1000,13 @@ function filterTabs() {
                 // Handle unknown dates - treat them as oldest
                 if (a.createdDate.includes('Unknown')) return 1; 
                 if (b.createdDate.includes('Unknown')) return -1;
-                // Compare dates
-                return new Date(b.createdDate) - new Date(a.createdDate);
+                
+                // Properly convert to date objects for comparison
+                const dateA = a.createdDate !== 'Unknown' ? new Date(a.createdDate) : new Date(0);
+                const dateB = b.createdDate !== 'Unknown' ? new Date(b.createdDate) : new Date(0);
+                
+                // Compare dates (newest first)
+                return dateB - dateA;
             });
             break;
         case 'title': // By title
