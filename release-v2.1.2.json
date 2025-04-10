@@ -12,6 +12,8 @@
   "bug_fixes": [
     "Fixed Google Analytics initialization errors",
     "Improved Content Security Policy for analytics integration",
+    "Removed googletagmanager.com domain from CSP to comply with Chrome's security rules",
+    "Modified analytics implementation to avoid CSP violations",
     "Fixed feedback submission flow",
     "Fixed 'Newest First' sorting option that wasn't working properly",
     "Removed unused export/import functions",
