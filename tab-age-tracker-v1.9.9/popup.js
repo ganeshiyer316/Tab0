@@ -585,19 +585,30 @@ function createOrUpdateTrendChart(chartData, ctx) {
 }
 
 function openDetailView() {
-  // Use the web dashboard but ensure we use the server URL or proper dashboard URL
-  chrome.storage.local.get(['settings'], (settingsData) => {
-    const settings = settingsData.settings || {};
-    const serverUrl = settings.serverUrl || 'https://tab-age-tracker.replit.app';
-    
-    // Create the dashboard URL 
-    const dashboardUrl = `${serverUrl}/dashboard.html`;
-    
-    // Open the dashboard in a new tab
-    chrome.tabs.create({ url: dashboardUrl });
-    
-    // Sync data with the server in the background
-    chrome.runtime.sendMessage({ action: 'syncData' });
+  // Use the existing openWebDashboard function that includes all data passing logic
+  // that previously worked in v1.9.8
+  
+  // Get current data
+  chrome.storage.local.get(['tabData', 'tabHistory', 'peakTabCount'], (data) => {
+    // Get settings
+    chrome.storage.local.get(['settings'], (settingsData) => {
+      const settings = settingsData.settings || {};
+      
+      // Convert the data to a base64 string
+      const dataString = JSON.stringify(data);
+      const encodedData = btoa(encodeURIComponent(dataString));
+      
+      // Create the URL with data and server URL parameters
+      let dashboardUrl = chrome.runtime.getURL(`/dashboard.html?data=${encodedData}`);
+      
+      // Add server URL if available
+      if (settings.serverUrl) {
+        dashboardUrl += `&serverUrl=${encodeURIComponent(settings.serverUrl)}`;
+      }
+      
+      // Open the dashboard in a new tab with all the required data
+      chrome.tabs.create({ url: dashboardUrl });
+    });
   });
 }
 
