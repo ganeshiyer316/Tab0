@@ -394,12 +394,6 @@ def suggest_tab_groups():
 @app.route('/api/submit-feedback', methods=['POST'])
 def submit_feedback():
     """Handle feedback submission and store in Google Sheets"""
-    from datetime import datetime
-    import json
-    import gspread
-    from oauth2client.service_account import ServiceAccountCredentials
-    import os
-    
     try:
         # Get feedback data from request
         data = request.json
@@ -429,7 +423,7 @@ def submit_feedback():
         feedback_data.append(feedback_entry)
         with open('feedback_data.json', 'w') as f:
             json.dump(feedback_data, f, indent=2)
-        
+            
         # Try to send to Google Sheets if credentials exist
         credentials_path = 'client_secret.json'
         
@@ -441,14 +435,24 @@ def submit_feedback():
                 credentials = ServiceAccountCredentials.from_json_keyfile_name(credentials_path, scope)
                 client = gspread.authorize(credentials)
                 
-                # Open the Google Sheet - use environment variable or default to a fallback name
-                sheet_name = os.environ.get('FEEDBACK_SHEET_NAME', 'Tab Age Tracker Feedback')
-                sheet = client.open(sheet_name).sheet1
+                # Try to open by sheet ID first
+                sheet_key = os.environ.get('FEEDBACK_SHEET_ID', None)
+                if sheet_key:
+                    try:
+                        sheet = client.open_by_key(sheet_key).sheet1
+                    except Exception:
+                        app.logger.warning(f"Could not open sheet by ID '{sheet_key}', trying by name")
+                        sheet_key = None
+                
+                # If sheet_key is None or opening by key failed, try by name
+                if not sheet_key:
+                    sheet_name = os.environ.get('FEEDBACK_SHEET_NAME', 'Tab Age Tracker Feedback')
+                    sheet = client.open(sheet_name).sheet1
                 
                 # Add the feedback as a new row
                 sheet.append_row([current_date, email, feedback])
                 
-                app.logger.info(f"Successfully added feedback to Google Sheet: {sheet_name}")
+                app.logger.info(f"Successfully added feedback to Google Sheets")
             except Exception as sheet_error:
                 app.logger.error(f"Error sending feedback to Google Sheets: {str(sheet_error)}")
                 # Continue with success response even if Google Sheets fails

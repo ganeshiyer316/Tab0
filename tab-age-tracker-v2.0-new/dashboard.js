@@ -1203,3 +1203,89 @@ function extractDateFromURL(url) {
         return null;
     }
 }
+
+/**
+ * Submit user feedback to the server
+ */
+function submitFeedback() {
+    const feedbackText = document.getElementById('feedbackText');
+    const feedbackEmail = document.getElementById('feedbackEmail');
+    const feedbackStatus = document.getElementById('feedbackStatus');
+    const submitButton = document.getElementById('submitFeedbackBtn');
+    
+    if (!feedbackText || !feedbackEmail || !feedbackStatus || !submitButton) {
+        console.error("Feedback form elements not found");
+        return;
+    }
+    
+    // Validate fields
+    if (!feedbackText.value.trim()) {
+        feedbackStatus.textContent = 'Please enter your feedback before submitting.';
+        feedbackStatus.className = 'feedback-status error';
+        return;
+    }
+    
+    // Email is optional, but if provided, validate it
+    if (feedbackEmail.value && !validateEmail(feedbackEmail.value)) {
+        feedbackStatus.textContent = 'Please enter a valid email address.';
+        feedbackStatus.className = 'feedback-status error';
+        return;
+    }
+    
+    // Disable the submit button and show loading state
+    submitButton.disabled = true;
+    submitButton.textContent = 'Submitting...';
+    feedbackStatus.textContent = 'Sending your feedback...';
+    feedbackStatus.className = 'feedback-status info';
+    
+    // Prepare the data
+    const feedbackData = {
+        email: feedbackEmail.value.trim(),
+        feedback: feedbackText.value.trim()
+    };
+    
+    // Send the feedback to the server
+    fetch('/api/submit-feedback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(feedbackData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Show success message
+            feedbackStatus.textContent = data.message || 'Feedback submitted successfully! Thank you for your input.';
+            feedbackStatus.className = 'feedback-status success';
+            
+            // Clear the form
+            feedbackText.value = '';
+            feedbackEmail.value = '';
+        } else {
+            // Show error message
+            feedbackStatus.textContent = data.message || 'An error occurred while submitting your feedback. Please try again.';
+            feedbackStatus.className = 'feedback-status error';
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting feedback:', error);
+        feedbackStatus.textContent = 'An error occurred while submitting your feedback. Please try again.';
+        feedbackStatus.className = 'feedback-status error';
+    })
+    .finally(() => {
+        // Re-enable the submit button
+        submitButton.disabled = false;
+        submitButton.textContent = 'Submit Feedback';
+    });
+}
+
+/**
+ * Simple email validation function
+ * @param {string} email - Email to validate
+ * @returns {boolean} - Whether the email is valid
+ */
+function validateEmail(email) {
+    const re = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+    return re.test(String(email).toLowerCase());
+}
