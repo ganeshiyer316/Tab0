@@ -82,7 +82,7 @@ def get_latest_version_info():
         
         if not versioned_files:
             app.logger.warning("No valid versioned files found")
-            return {'version': '2.1.0', 'date': '2025-04-10', 'changes': []}
+            return {'version': '2.1.4', 'date': '2025-04-10', 'changes': []}
         
         # Get the latest release file
         latest_release_file = versioned_files[-1][0]
@@ -95,7 +95,7 @@ def get_latest_version_info():
         return release_info
     except Exception as e:
         app.logger.error(f"Error getting latest version info: {str(e)}")
-        return {'version': '2.1.0', 'date': '2025-04-10', 'changes': []}
+        return {'version': '2.1.4', 'date': '2025-04-10', 'changes': []}
 
 @app.route('/')
 def home():
@@ -103,7 +103,7 @@ def home():
     try:
         # Get the latest version info
         latest_version = get_latest_version_info()
-        version = latest_version.get('version', '2.1.0')
+        version = latest_version.get('version', '2.1.4')
         name = latest_version.get('name', 'Google Analytics Integration')
         changes = latest_version.get('changes', [])
         bug_fixes = latest_version.get('bug_fixes', [])
@@ -176,8 +176,8 @@ def download_extension():
     Accepts query parameters for cache busting but ignores them
     """
     try:
-        # Get the version from query parameter (default to 2.1 for safety)
-        requested_version = request.args.get('v', '2.1')
+        # Get the version from query parameter (default to 2.1.4 for safety)
+        requested_version = request.args.get('v', '2.1.4')
         
         # First, try the simplest approach - see if requested version exists
         simple_filename = f'tab-age-tracker-v{requested_version}.zip'
