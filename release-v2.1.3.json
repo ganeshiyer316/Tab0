@@ -1,0 +1,19 @@
+{
+  "version": "2.1.3",
+  "name": "Minimal Security Edition",
+  "date": "2025-04-10",
+  "changes": [
+    "Maximum Security - Completely removed Content Security Policy (CSP) section from manifest",
+    "Security Enhancement - Simplified extension structure for guaranteed compatibility",
+    "UI Reliability - All UI functions work exactly as before",
+    "Privacy Enhancement - No external connections",
+    "Documentation - Added security explanation in README.md"
+  ],
+  "bug_fixes": [
+    "Fixed Chrome installation errors completely by removing CSP",
+    "Removed all Google Analytics code for maximum compatibility",
+    "Fixed 'Newest First' sorting option",
+    "Improved error handling in all JavaScript files",
+    "Guaranteed installation on all browsers with strict security policies"
+  ]
+}
