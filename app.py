@@ -553,6 +553,7 @@ def submit_feedback():
             
         # Try to send to Google Sheets if credentials exist
         credentials_path = 'client_secret.json'
+        sheet_url = None
         
         if os.path.exists(credentials_path):
             try:
@@ -567,6 +568,7 @@ def submit_feedback():
                 if sheet_key:
                     try:
                         sheet = client.open_by_key(sheet_key).sheet1
+                        sheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_key}"
                     except Exception:
                         app.logger.warning(f"Could not open sheet by ID '{sheet_key}', trying by name")
                         sheet_key = None
@@ -574,22 +576,40 @@ def submit_feedback():
                 # If sheet_key is None or opening by key failed, try by name
                 if not sheet_key:
                     sheet_name = os.environ.get('FEEDBACK_SHEET_NAME', 'Tab Age Tracker Feedback')
-                    sheet = client.open(sheet_name).sheet1
+                    try:
+                        sheet_file = client.open(sheet_name)
+                        sheet = sheet_file.sheet1
+                        sheet_url = f"https://docs.google.com/spreadsheets/d/{sheet_file.id}"
+                    except Exception as e:
+                        # Create a new sheet if it doesn't exist
+                        app.logger.info(f"Creating new feedback sheet: {sheet_name}")
+                        new_sheet = client.create(sheet_name)
+                        sheet = new_sheet.sheet1
+                        sheet_url = f"https://docs.google.com/spreadsheets/d/{new_sheet.id}"
+                        
+                        # Add headers
+                        sheet.append_row(['Date', 'Email', 'Feedback'])
                 
                 # Add the feedback as a new row
                 sheet.append_row([current_date, email, feedback])
                 
-                app.logger.info(f"Successfully added feedback to Google Sheets")
+                app.logger.info(f"Successfully added feedback to Google Sheets: {sheet_url}")
             except Exception as sheet_error:
                 app.logger.error(f"Error sending feedback to Google Sheets: {str(sheet_error)}")
                 # Continue with success response even if Google Sheets fails
         else:
             app.logger.warning("Google Sheets credentials not found. Feedback saved to local file only.")
         
-        return jsonify({
+        response_data = {
             'status': 'success',
             'message': 'Feedback received! Thank you for helping improve Tab Age Tracker.'
-        })
+        }
+        
+        # Add the Google Sheet URL if available
+        if sheet_url:
+            response_data['sheet_url'] = sheet_url
+            
+        return jsonify(response_data)
     
     except Exception as e:
         app.logger.error(f"Error submitting feedback: {str(e)}")
