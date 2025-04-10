@@ -21,6 +21,12 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('searchInput').addEventListener('input', filterTabs);
     document.getElementById('categoryFilter').addEventListener('change', filterTabs);
     document.getElementById('sortOption').addEventListener('change', filterTabs);
+    
+    // Add event listener for feedback submission
+    const submitFeedbackBtn = document.getElementById('submitFeedbackBtn');
+    if (submitFeedbackBtn) {
+        submitFeedbackBtn.addEventListener('click', submitFeedback);
+    }
 });
 
 /**
