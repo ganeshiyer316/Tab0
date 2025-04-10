@@ -21,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('searchInput')?.addEventListener('input', filterTabs);
     document.getElementById('categoryFilter')?.addEventListener('change', filterTabs);
     document.getElementById('sortOption')?.addEventListener('change', filterTabs);
+    document.getElementById('submitFeedbackBtn')?.addEventListener('click', submitFeedback);
     
     // Check for search parameter in URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -1329,4 +1330,84 @@ function displayOldestTabs() {
     if (oldestTabs.length === 0) {
         container.innerHTML = '<p>No tab data available. Please sync your data from the extension.</p>';
     }
+}
+
+/**
+ * Submit user feedback to the server
+ */
+function submitFeedback() {
+    const emailInput = document.getElementById('feedbackEmail');
+    const feedbackTextarea = document.getElementById('feedbackText');
+    const feedbackStatus = document.getElementById('feedbackStatus');
+    const submitButton = document.getElementById('submitFeedbackBtn');
+    
+    // Get values
+    const email = emailInput.value.trim();
+    const feedback = feedbackTextarea.value.trim();
+    
+    // Validate
+    if (!feedback) {
+        feedbackStatus.textContent = 'Please enter your feedback before submitting.';
+        feedbackStatus.className = 'feedback-status error-message';
+        return;
+    }
+    
+    // Optional email validation
+    if (email && !validateEmail(email)) {
+        feedbackStatus.textContent = 'Please enter a valid email address.';
+        feedbackStatus.className = 'feedback-status error-message';
+        return;
+    }
+    
+    // Show loading state
+    submitButton.disabled = true;
+    feedbackStatus.textContent = 'Submitting feedback...';
+    feedbackStatus.className = 'feedback-status';
+    
+    // Send feedback to server
+    fetch('/api/submit-feedback', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            email: email,
+            feedback: feedback
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            // Clear form
+            emailInput.value = '';
+            feedbackTextarea.value = '';
+            
+            // Show success message
+            feedbackStatus.textContent = data.message || 'Feedback submitted successfully!';
+            feedbackStatus.className = 'feedback-status success-message';
+            
+            // Show message notification
+            showMessage('Thank you for your feedback!');
+        } else {
+            throw new Error(data.message || 'Failed to submit feedback');
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting feedback:', error);
+        feedbackStatus.textContent = 'Failed to submit feedback. Please try again later.';
+        feedbackStatus.className = 'feedback-status error-message';
+    })
+    .finally(() => {
+        submitButton.disabled = false;
+    });
+}
+
+/**
+ * Simple email validation function
+ * @param {string} email - Email to validate
+ * @returns {boolean} - Whether the email is valid
+ */
+function validateEmail(email) {
+    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return re.test(email);
 }
