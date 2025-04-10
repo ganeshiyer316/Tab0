@@ -615,6 +615,11 @@ function searchTabs(query, redirectToDashboard = true) {
     return;
   }
   
+  // Track the search event
+  if (typeof trackEvent === 'function') {
+    trackEvent('Interaction', 'Search', 'Tab Search');
+  }
+  
   console.log('Searching tabs for:', trimmedQuery);
   
   // Perform local search in the popup
@@ -765,6 +770,11 @@ function openWebDashboardWithSearch(searchQuery) {
     return;
   }
   
+  // Track the search in dashboard event
+  if (typeof trackEvent === 'function') {
+    trackEvent('Navigation', 'Search', 'Dashboard Search');
+  }
+  
   // Show loading state to user
   const searchInput = document.getElementById('searchInput');
   const originalPlaceholder = searchInput ? searchInput.placeholder : '';
@@ -799,6 +809,11 @@ function openWebDashboardWithSearch(searchQuery) {
  * This function opens the web dashboard URL and exports the current tab data
  */
 function openWebDashboard() {
+  // Track the web dashboard open event
+  if (typeof trackEvent === 'function') {
+    trackEvent('Navigation', 'Open', 'Web Dashboard');
+  }
+  
   // Get current data
   chrome.storage.local.get(['tabData', 'tabHistory', 'peakTabCount'], (data) => {
     // Check if we should use the server dashboard

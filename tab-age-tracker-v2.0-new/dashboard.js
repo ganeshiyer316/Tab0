@@ -1214,6 +1214,11 @@ function extractDateFromURL(url) {
  * Submit user feedback to the server
  */
 function submitFeedback() {
+    // Track feedback submission attempt
+    if (typeof trackEvent === 'function') {
+        trackEvent('Engagement', 'Submit', 'Feedback Form');
+    }
+    
     const feedbackText = document.getElementById('feedbackText');
     const feedbackEmail = document.getElementById('feedbackEmail');
     const feedbackStatus = document.getElementById('feedbackStatus');
@@ -1261,6 +1266,11 @@ function submitFeedback() {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
+            // Track successful feedback submission
+            if (typeof trackEvent === 'function') {
+                trackEvent('Engagement', 'Success', 'Feedback Submitted');
+            }
+            
             // Show success message
             feedbackStatus.textContent = data.message || 'Feedback submitted successfully! Thank you for your input.';
             feedbackStatus.className = 'feedback-status success';
