@@ -354,6 +354,13 @@ async function updateExtensionBadge() {
 // Check for old tabs and send notifications if enabled
 async function checkAndNotifyOldTabs() {
   try {
+    // Track old tabs check
+    try {
+      trackEvent('Feature', 'Check', 'Old Tabs Check');
+    } catch (trackError) {
+      console.error('Error tracking old tabs check event:', trackError);
+    }
+    
     const { tabData, settings } = await chrome.storage.local.get(['tabData', 'settings']);
     
     if (!tabData || !settings || !settings.notifyOldTabs) return;
@@ -387,6 +394,13 @@ async function checkAndNotifyOldTabs() {
     });
     
     if (oldTabs.length > 0) {
+      // Track old tabs found
+      try {
+        trackEvent('Feature', 'Found', 'Old Tabs Found', oldTabs.length);
+      } catch (trackError) {
+        console.error('Error tracking old tabs found event:', trackError);
+      }
+      
       // Sort by age (oldest first)
       oldTabs.sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt) : extractDateFromURL(a.url);
@@ -441,6 +455,13 @@ async function checkAndNotifyOldTabs() {
 // Listen for notification button clicks
 chrome.notifications.onButtonClicked.addListener((notificationId, buttonIndex) => {
   if (buttonIndex === 0) {
+    // Track when user clicks on notification to view details
+    try {
+      trackEvent('Engagement', 'Click', 'Old Tabs Notification');
+    } catch (trackError) {
+      console.error('Error tracking notification click event:', trackError);
+    }
+    
     // Open the details page
     chrome.tabs.create({ url: 'options.html#details' });
   }
@@ -593,6 +614,13 @@ async function captureCurrentTabsWithDistribution() {
 // Sync data with the server for long-term analysis
 async function syncDataWithServer() {
   try {
+    // Track server sync attempt
+    try {
+      trackEvent('Data', 'Sync', 'Server Sync Attempt');
+    } catch (trackError) {
+      console.error('Error tracking sync event:', trackError);
+    }
+    
     // Get current data
     const data = await chrome.storage.local.get(['tabData', 'tabHistory', 'peakTabCount', 'settings']);
     
@@ -626,8 +654,20 @@ async function syncDataWithServer() {
     
     if (response.ok) {
       console.log('Data successfully synced with server');
+      // Track successful sync
+      try {
+        trackEvent('Data', 'Sync', 'Server Sync Success');
+      } catch (trackError) {
+        console.error('Error tracking sync success event:', trackError);
+      }
     } else {
       console.error('Failed to sync data with server:', await response.text());
+      // Track failed sync
+      try {
+        trackEvent('Data', 'Error', 'Server Sync Failed');
+      } catch (trackError) {
+        console.error('Error tracking sync failure event:', trackError);
+      }
     }
   } catch (error) {
     console.error('Error syncing data with server:', error);
