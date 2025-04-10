@@ -189,12 +189,23 @@
 
         <div class="form-group">
           <label for="feedbackText">Feedback</label>
-          <textarea id="feedbackText" rows="6" placeholder="Share your thoughts, suggestions, or report any issues you've encountered..."></textarea>
+          <textarea id="feedbackText" rows="8" style="min-height: 160px; width: 100%;" placeholder="Share your thoughts, suggestions, or report any issues you've encountered..."></textarea>
         </div>
 
         <div class="form-actions">
           <button id="submitFeedbackBtn" class="primary-button">Submit Feedback</button>
           <div id="feedbackStatus" class="feedback-status"></div>
+        </div>
+        
+        <!-- Feedback success message container (hidden by default) -->
+        <div id="feedbackSuccessContainer" style="display: none; margin-top: 20px; padding: 15px; background-color: #e8f5e9; border-left: 4px solid #4CAF50; border-radius: 4px;">
+          <h3 style="color: #2E7D32; margin-top: 0;">Thank you for your feedback!</h3>
+          <p id="feedbackSuccessMessage">Your feedback has been submitted successfully.</p>
+          <p>We appreciate your input and will use it to improve Tab Age Tracker.</p>
+          <div id="feedbackSheetLink" style="margin-top: 15px;">
+            <small style="font-style: italic;">Admin: View all feedback in the <a href="https://docs.google.com/spreadsheets/d/your-google-sheet-id" id="googleSheetLink" target="_blank">Google Feedback Sheet</a></small>
+          </div>
+          <button id="submitAnotherFeedbackBtn" class="secondary-button" style="margin-top: 15px;">Submit Another Feedback</button>
         </div>
       </div>
       
@@ -202,6 +213,13 @@
         <h3>About Your Feedback</h3>
         <p>Your feedback helps us improve Tab Age Tracker. All submissions include the current date and are viewable only by the developer.</p>
         <p>No personal browsing data is collected or shared when you submit feedback.</p>
+      </div>
+      
+      <!-- Web dashboard access button -->
+      <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+        <h3>Access Web Dashboard</h3>
+        <p>View detailed analytics and track your progress on the web dashboard.</p>
+        <button id="openWebDashboardBtn" class="primary-button">Open Web Dashboard</button>
       </div>
     </div>
   </div>
