@@ -1,4 +1,13 @@
 document.addEventListener('DOMContentLoaded', async () => {
+  // Initialize Google Analytics if available
+  if (typeof initializeAnalytics === 'function') {
+    initializeAnalytics();
+    // Track page view
+    if (typeof trackEvent === 'function') {
+      trackEvent('Navigation', 'Page View', 'Options Page');
+    }
+  }
+  
   // Set up tab navigation
   setupTabs();
   
