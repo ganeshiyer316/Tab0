@@ -1,0 +1,10 @@
+{
+  "version": "2.1.4",
+  "notes": "This update focuses on improving compatibility with Chrome's security policies to ensure smooth installation and operation. Changes include:\n\n- Added proper Content Security Policy (CSP) for Manifest V3 compliance\n- Fixed chart rendering issues that appeared in previous versions\n- Implemented a self-contained Google Analytics integration\n- Improved error handling for chart.js loading\n- Updated configuration to ensure smooth operation across all browsers",
+  "files": [
+    {
+      "name": "tab-age-tracker-v2.1.4.zip",
+      "download_url": "/download?v=2.1.4"
+    }
+  ]
+}

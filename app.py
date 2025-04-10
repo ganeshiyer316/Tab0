@@ -57,7 +57,7 @@ def get_latest_version_info():
         
         if not release_files:
             app.logger.warning("No release files found, using default values")
-            return {'version': '2.1.0', 'date': '2025-04-10', 'changes': []}
+            return {'version': '2.1.4', 'date': '2025-04-10', 'changes': []}
         
         # Parse versions more carefully - handle multiple formats including feature editions like "no-analytics"
         version_pattern = re.compile(r'release-v(\d+)\.(\d+)(?:\.(\d+))?(?:-[a-zA-Z0-9-]+)?\.json')
