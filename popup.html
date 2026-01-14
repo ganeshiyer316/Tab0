@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TabSearch</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-left">
+        <h1 class="title">TabSearch</h1>
+        <span class="tab-count"><span id="totalCount">0</span> tabs</span>
+      </div>
+      <button id="settingsBtn" class="icon-btn" title="Settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Search -->
+    <div class="search-container">
+      <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="8"></circle>
+        <path d="m21 21-4.35-4.35"></path>
+      </svg>
+      <input type="text" id="searchInput" class="search-input" placeholder="Search tabs..." autofocus>
+      <button id="clearSearch" class="clear-btn" style="display: none;">&times;</button>
+    </div>
+
+    <!-- Duplicates Alert -->
+    <div id="duplicatesAlert" class="alert" style="display: none;">
+      <span class="alert-icon">!</span>
+      <span id="duplicateCount">0</span> duplicate tabs found
+      <button id="viewDuplicates" class="alert-action">View</button>
+    </div>
+
+    <!-- Main Content (hidden when searching) -->
+    <div id="mainContent">
+      <!-- Age Categories -->
+      <section class="section">
+        <h2 class="section-title">By Age</h2>
+        <div class="age-grid">
+          <button class="age-card" data-age="today">
+            <span class="age-count" id="todayCount">0</span>
+            <span class="age-label">Today</span>
+          </button>
+          <button class="age-card" data-age="week">
+            <span class="age-count" id="weekCount">0</span>
+            <span class="age-label">1-7 Days</span>
+          </button>
+          <button class="age-card" data-age="month">
+            <span class="age-count" id="monthCount">0</span>
+            <span class="age-label">8-30 Days</span>
+          </button>
+          <button class="age-card" data-age="older">
+            <span class="age-count" id="olderCount">0</span>
+            <span class="age-label">30+ Days</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Domain Categories -->
+      <section class="section">
+        <h2 class="section-title">Top Domains</h2>
+        <div id="domainList" class="domain-list">
+          <!-- Populated by JS -->
+        </div>
+        <button id="showAllDomains" class="show-all-btn" style="display: none;">Show all domains</button>
+      </section>
+    </div>
+
+    <!-- Search Results (hidden by default) -->
+    <div id="searchResults" class="search-results" style="display: none;">
+      <div class="results-header">
+        <span id="resultsCount">0</span> results
+        <button id="backToMain" class="back-btn">Back</button>
+      </div>
+      <div id="resultsList" class="results-list">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+
+    <!-- Tab List View (for filtered views) -->
+    <div id="tabListView" class="tab-list-view" style="display: none;">
+      <div class="results-header">
+        <span id="listTitle">Tabs</span>
+        <button id="backFromList" class="back-btn">Back</button>
+      </div>
+      <div id="tabList" class="results-list">
+        <!-- Populated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

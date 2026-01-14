@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TabSearch Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>TabSearch Settings</h1>
+      <p class="subtitle">Configure your tab management preferences</p>
+    </header>
+
+    <main>
+      <!-- Notifications Section -->
+      <section class="section">
+        <h2>Notifications</h2>
+
+        <div class="setting">
+          <label class="toggle-label">
+            <input type="checkbox" id="notificationsEnabled" checked>
+            <span class="toggle-text">Enable old tab notifications</span>
+          </label>
+          <p class="setting-description">Get notified when tabs are older than the threshold</p>
+        </div>
+
+        <div class="setting">
+          <label for="oldTabThreshold">Old tab threshold (days)</label>
+          <input type="number" id="oldTabThreshold" min="1" max="365" value="30">
+          <p class="setting-description">Tabs older than this will trigger a notification</p>
+        </div>
+      </section>
+
+      <!-- Display Section -->
+      <section class="section">
+        <h2>Display</h2>
+
+        <div class="setting">
+          <label for="badgeDisplay">Badge display</label>
+          <select id="badgeDisplay">
+            <option value="count">Tab count</option>
+            <option value="duplicates">Duplicate count (if any)</option>
+            <option value="none">No badge</option>
+          </select>
+          <p class="setting-description">What to show on the extension icon</p>
+        </div>
+      </section>
+
+      <!-- Privacy Section -->
+      <section class="section">
+        <h2>Privacy</h2>
+        <div class="privacy-info">
+          <div class="privacy-badge">100% Local</div>
+          <p>TabSearch stores all data locally on your device using Chrome's secure storage. No data is ever sent to external servers.</p>
+          <ul>
+            <li>No analytics or tracking</li>
+            <li>No network requests</li>
+            <li>No account required</li>
+            <li>Your browsing data stays on your device</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Data Section -->
+      <section class="section">
+        <h2>Data</h2>
+
+        <div class="setting">
+          <button id="clearData" class="danger-btn">Clear all stored data</button>
+          <p class="setting-description">Remove all tab tracking data (cannot be undone)</p>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>TabSearch v1.0.0</p>
+      <p class="muted">Made with privacy in mind</p>
+    </footer>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>
