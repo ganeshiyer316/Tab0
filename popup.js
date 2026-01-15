@@ -87,13 +87,21 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('totalCount').textContent = allTabs.length;
   }
 
+  // Get calendar days difference (ignores time, just compares dates)
+  function getCalendarDaysAgo(dateString) {
+    const now = new Date();
+    const then = new Date(dateString);
+
+    // Reset to start of day for accurate calendar day comparison
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const thenStart = new Date(then.getFullYear(), then.getMonth(), then.getDate());
+
+    const diffMs = todayStart - thenStart;
+    return Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  }
+
   // Update age category counts
   function updateAgeCounts() {
-    const now = new Date();
-    const oneDay = 24 * 60 * 60 * 1000;
-    const oneWeek = 7 * oneDay;
-    const oneMonth = 30 * oneDay;
-
     let today = 0, week = 0, month = 0, older = 0;
 
     for (const tab of allTabs) {
@@ -103,12 +111,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         continue;
       }
 
-      const age = now - new Date(stored.createdAt);
+      const daysAgo = getCalendarDaysAgo(stored.createdAt);
 
-      if (age < oneDay) today++;
-      else if (age < oneWeek) week++;
-      else if (age < oneMonth) month++;
-      else older++;
+      if (daysAgo === 0) today++;           // Opened today (same calendar day)
+      else if (daysAgo <= 7) week++;        // 1-7 days ago
+      else if (daysAgo <= 30) month++;      // 8-30 days ago
+      else older++;                          // 30+ days ago
     }
 
     document.getElementById('todayCount').textContent = today;
@@ -281,15 +289,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       return { label: '?', class: 'age-unknown' };
     }
 
-    const now = new Date();
-    const age = now - new Date(stored.createdAt);
-    const days = Math.floor(age / (24 * 60 * 60 * 1000));
+    const daysAgo = getCalendarDaysAgo(stored.createdAt);
 
-    if (days === 0) return { label: 'Today', class: 'age-today' };
-    if (days === 1) return { label: '1d', class: 'age-week' };
-    if (days < 7) return { label: `${days}d`, class: 'age-week' };
-    if (days < 30) return { label: `${days}d`, class: 'age-month' };
-    return { label: `${days}d`, class: 'age-older' };
+    if (daysAgo === 0) return { label: 'Today', class: 'age-today' };
+    if (daysAgo === 1) return { label: '1d', class: 'age-week' };
+    if (daysAgo <= 7) return { label: `${daysAgo}d`, class: 'age-week' };
+    if (daysAgo <= 30) return { label: `${daysAgo}d`, class: 'age-month' };
+    return { label: `${daysAgo}d`, class: 'age-older' };
   }
 
   // Switch to a tab
@@ -306,24 +312,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Show tabs by age category
   function showTabsByAge(ageCategory) {
-    const now = new Date();
-    const oneDay = 24 * 60 * 60 * 1000;
-    const oneWeek = 7 * oneDay;
-    const oneMonth = 30 * oneDay;
-
     const filtered = allTabs.filter(tab => {
       const stored = storedTabData[tab.id];
       if (!stored || !stored.createdAt) {
         return ageCategory === 'older';
       }
 
-      const age = now - new Date(stored.createdAt);
+      const daysAgo = getCalendarDaysAgo(stored.createdAt);
 
       switch (ageCategory) {
-        case 'today': return age < oneDay;
-        case 'week': return age >= oneDay && age < oneWeek;
-        case 'month': return age >= oneWeek && age < oneMonth;
-        case 'older': return age >= oneMonth;
+        case 'today': return daysAgo === 0;
+        case 'week': return daysAgo >= 1 && daysAgo <= 7;
+        case 'month': return daysAgo > 7 && daysAgo <= 30;
+        case 'older': return daysAgo > 30;
         default: return false;
       }
     });
