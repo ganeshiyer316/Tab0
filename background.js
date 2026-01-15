@@ -2,23 +2,38 @@
 // 100% local, no external calls, no tracking
 
 // Initialize extension on install
-chrome.runtime.onInstalled.addListener(async () => {
-  console.log('TabSearch installed');
+chrome.runtime.onInstalled.addListener(async (details) => {
+  console.log('TabSearch installed, reason:', details.reason);
 
-  // Initialize storage with default settings
-  const initialData = {
-    tabs: {},
-    settings: {
-      oldTabThreshold: 30,
-      notificationsEnabled: true,
-      badgeDisplay: 'count'
+  // Only initialize data on fresh install, not on update
+  if (details.reason === 'install') {
+    // Fresh install - initialize storage with default settings
+    const initialData = {
+      tabs: {},
+      settings: {
+        oldTabThreshold: 30,
+        notificationsEnabled: true,
+        badgeDisplay: 'count'
+      }
+    };
+
+    await chrome.storage.local.set(initialData);
+
+    // Capture all existing tabs
+    await captureExistingTabs();
+  } else if (details.reason === 'update') {
+    // Update - preserve existing data, just ensure settings exist
+    const { settings } = await chrome.storage.local.get(['settings']);
+    if (!settings) {
+      await chrome.storage.local.set({
+        settings: {
+          oldTabThreshold: 30,
+          notificationsEnabled: true,
+          badgeDisplay: 'count'
+        }
+      });
     }
-  };
-
-  await chrome.storage.local.set(initialData);
-
-  // Capture all existing tabs
-  await captureExistingTabs();
+  }
 
   // Update badge
   await updateBadge();

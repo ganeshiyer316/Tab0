@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "TabSearch",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Fast tab search and management. 100% local, no tracking, no data collection.",
   "permissions": [
     "tabs",
